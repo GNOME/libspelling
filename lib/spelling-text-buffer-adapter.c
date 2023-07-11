@@ -74,14 +74,17 @@ struct _SpellingTextBufferAdapter
   guint            enabled : 1;
 };
 
-static void spelling_add_action    (SpellingTextBufferAdapter *self,
-                                    GVariant                  *param);
-static void spelling_ignore_action (SpellingTextBufferAdapter *self,
-                                    GVariant                  *param);
+static void spelling_add_action     (SpellingTextBufferAdapter *self,
+                                     GVariant                  *param);
+static void spelling_ignore_action  (SpellingTextBufferAdapter *self,
+                                     GVariant                  *param);
+static void spelling_enabled_action (SpellingTextBufferAdapter *self,
+                                     GVariant                  *param);
 
 EGG_DEFINE_ACTION_GROUP (SpellingTextBufferAdapter, spelling_text_buffer_adapter, {
   { "add", spelling_add_action, "s" },
   { "ignore", spelling_ignore_action, "s" },
+  { "enabled", spelling_enabled_action, NULL, "false" },
 })
 
 G_DEFINE_FINAL_TYPE_WITH_CODE (SpellingTextBufferAdapter, spelling_text_buffer_adapter, G_TYPE_OBJECT,
@@ -522,6 +525,10 @@ spelling_text_buffer_adapter_set_enabled (SpellingTextBufferAdapter *self,
       spelling_text_buffer_adapter_queue_update (self);
 
       g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ENABLED]);
+
+      spelling_text_buffer_adapter_set_action_state (self,
+                                                     "enabled",
+                                                     g_variant_new_boolean (enabled));
     }
 }
 
@@ -1023,4 +1030,13 @@ spelling_ignore_action (SpellingTextBufferAdapter *self,
       spelling_checker_ignore_word (self->checker, g_variant_get_string (param, NULL));
       spelling_text_buffer_adapter_invalidate_all (self);
     }
+}
+
+static void
+spelling_enabled_action (SpellingTextBufferAdapter *self,
+                         GVariant                  *param)
+{
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+
+  spelling_text_buffer_adapter_set_enabled (self, !self->enabled);
 }
