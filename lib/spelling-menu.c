@@ -30,7 +30,7 @@
 #define MAX_CORRECTIONS 5
 #define SPELLING_CORRECTIONS_MENU "SPELLING_CORRECTIONS_MENU"
 
-#define EDITOR_TYPE_SPELL_CORRECTIONS (spelling_corrections_get_type())
+#define SPELLING_TYPE_CORRECTIONS (spelling_corrections_get_type())
 G_DECLARE_FINAL_TYPE (SpellingCorrections, spelling_corrections, SPELLING, CORRECTIONS, GMenuModel)
 
 struct _SpellingCorrections
@@ -160,7 +160,7 @@ spelling_corrections_set (SpellingCorrections *self,
 static GMenuModel *
 spelling_corrections_new (void)
 {
-  return g_object_new (EDITOR_TYPE_SPELL_CORRECTIONS, NULL);
+  return g_object_new (SPELLING_TYPE_CORRECTIONS, NULL);
 }
 
 static int
