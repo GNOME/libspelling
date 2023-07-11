@@ -138,10 +138,11 @@ spelling_corrections_set (SpellingCorrections *self,
 
   g_assert (SPELLING_IS_CORRECTIONS (self));
 
-  if (corrections == (const char * const *)self->corrections)
-    return;
+  g_set_str (&self->word, word);
 
-  if (g_strcmp0 (word, self->word) == 0)
+  if (corrections != NULL &&
+      self->corrections != NULL &&
+      g_strv_equal (corrections, (const char * const *)self->corrections))
     return;
 
   if (self->corrections != NULL)
@@ -150,10 +151,9 @@ spelling_corrections_set (SpellingCorrections *self,
   if (corrections != NULL)
     added = g_strv_length ((char **)corrections);
 
-  g_free (self->word);
-  self->word = g_strdup (word);
   g_strfreev (self->corrections);
   self->corrections = g_strdupv ((char **)corrections);
+
   g_menu_model_items_changed (G_MENU_MODEL (self), 0, removed, added);
 }
 
