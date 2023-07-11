@@ -31,8 +31,8 @@ libspelling_public_headers = [
 
 libspelling_deps = [
   dependency('gio-2.0'),
-  dependency('gtk4'),
-  dependency('gtksourceview-5'),
+  dependency('gtk4', version: '>= 4.8'),
+  dependency('gtksourceview-5', version: '>= 5.9'),
 ]
 
 if get_option('enchant').enabled()
