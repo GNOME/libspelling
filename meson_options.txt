@@ -1,0 +1,1 @@
+option('enchant', type: 'feature', value: 'enabled', description: 'Use enchant for spellchecking')
