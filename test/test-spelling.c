@@ -76,6 +76,7 @@ main (int   argc,
   adapter = spelling_text_buffer_adapter_new (source_buffer, checker);
   extra_menu = spelling_text_buffer_adapter_get_menu_model (adapter);
   gtk_text_view_set_extra_menu (GTK_TEXT_VIEW (source_view), extra_menu);
+  gtk_widget_insert_action_group (GTK_WIDGET (source_view), "spelling", G_ACTION_GROUP (adapter));
 
   spelling_text_buffer_adapter_set_enabled (adapter, TRUE);
 

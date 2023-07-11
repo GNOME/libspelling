@@ -22,6 +22,7 @@
 #include "config.h"
 
 #include "cjhtextregionprivate.h"
+#include "egg-action-group.h"
 
 #include "spelling-checker.h"
 #include "spelling-cursor-private.h"
@@ -73,7 +74,18 @@ struct _SpellingTextBufferAdapter
   guint            enabled : 1;
 };
 
-G_DEFINE_FINAL_TYPE (SpellingTextBufferAdapter, spelling_text_buffer_adapter, G_TYPE_OBJECT)
+static void spelling_add_action    (SpellingTextBufferAdapter *self,
+                                    GVariant                  *param);
+static void spelling_ignore_action (SpellingTextBufferAdapter *self,
+                                    GVariant                  *param);
+
+EGG_DEFINE_ACTION_GROUP (SpellingTextBufferAdapter, spelling_text_buffer_adapter, {
+  { "add", spelling_add_action, "s" },
+  { "ignore", spelling_ignore_action, "s" },
+})
+
+G_DEFINE_FINAL_TYPE_WITH_CODE (SpellingTextBufferAdapter, spelling_text_buffer_adapter, G_TYPE_OBJECT,
+                               G_IMPLEMENT_INTERFACE (G_TYPE_ACTION_GROUP, spelling_text_buffer_adapter_init_action_group))
 
 enum {
   PROP_0,
@@ -983,4 +995,32 @@ spelling_text_buffer_adapter_get_menu_model (SpellingTextBufferAdapter *self)
     }
 
   return self->menu;
+}
+
+static void
+spelling_add_action (SpellingTextBufferAdapter *self,
+                     GVariant                  *param)
+{
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+  g_assert (g_variant_is_of_type (param, G_VARIANT_TYPE_STRING));
+
+  if (self->checker != NULL)
+    {
+      spelling_checker_add_word (self->checker, g_variant_get_string (param, NULL));
+      spelling_text_buffer_adapter_invalidate_all (self);
+    }
+}
+
+static void
+spelling_ignore_action (SpellingTextBufferAdapter *self,
+                        GVariant                  *param)
+{
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+  g_assert (g_variant_is_of_type (param, G_VARIANT_TYPE_STRING));
+
+  if (self->checker != NULL)
+    {
+      spelling_checker_ignore_word (self->checker, g_variant_get_string (param, NULL));
+      spelling_text_buffer_adapter_invalidate_all (self);
+    }
 }
