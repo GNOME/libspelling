@@ -34,6 +34,7 @@
 #define RUN_CHECKED        GSIZE_TO_POINTER(1)
 #define UPDATE_DELAY_MSECS 100
 #define UPDATE_QUANTA_USEC (G_USEC_PER_SEC/1000L*2) /* 2 msec */
+#define MAX_WORD_CHARS     100
 /* Keyboard repeat is 30 msec by default (see
  * org.gnome.desktop.peripherals.keyboard repeat-interval) so
  * we want something longer than that so we are likely
@@ -64,6 +65,7 @@ struct _SpellingTextBufferAdapter
   GtkTextTag      *tag;
   GtkTextTag      *no_spell_check_tag;
   GMenuModel      *menu;
+  char            *word_under_cursor;
 
   guint            cursor_position;
   guint            incoming_cursor_position;
@@ -80,11 +82,14 @@ static void spelling_ignore_action  (SpellingTextBufferAdapter *self,
                                      GVariant                  *param);
 static void spelling_enabled_action (SpellingTextBufferAdapter *self,
                                      GVariant                  *param);
+static void spelling_correct_action (SpellingTextBufferAdapter *self,
+                                     GVariant                  *param);
 
 EGG_DEFINE_ACTION_GROUP (SpellingTextBufferAdapter, spelling_text_buffer_adapter, {
   { "add", spelling_add_action, "s" },
-  { "ignore", spelling_ignore_action, "s" },
+  { "correct", spelling_correct_action, "s" },
   { "enabled", spelling_enabled_action, NULL, "false" },
+  { "ignore", spelling_ignore_action, "s" },
 })
 
 G_DEFINE_FINAL_TYPE_WITH_CODE (SpellingTextBufferAdapter, spelling_text_buffer_adapter, G_TYPE_OBJECT,
@@ -564,6 +569,56 @@ mark_unchecked (SpellingTextBufferAdapter *self,
     }
 }
 
+static void
+remember_word_under_cursor (SpellingTextBufferAdapter *self)
+{
+  g_autofree char *word = NULL;
+  g_auto(GStrv) corrections = NULL;
+  GtkTextBuffer *buffer;
+  GtkTextMark *insert;
+  GtkTextIter iter, begin, end;
+
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+
+  g_clear_pointer (&self->word_under_cursor, g_free);
+
+  if (self->buffer == NULL || self->checker == NULL)
+    goto cleanup;
+
+  buffer = GTK_TEXT_BUFFER (self->buffer);
+  insert = gtk_text_buffer_get_insert (buffer);
+
+  /* Get the word under the cursor */
+  gtk_text_buffer_get_iter_at_mark (buffer, &iter, insert);
+  begin = iter;
+  if (!gtk_text_iter_starts_word (&begin))
+    gtk_text_iter_backward_word_start (&begin);
+  end = begin;
+  if (!gtk_text_iter_ends_word (&end))
+    gtk_text_iter_forward_word_end (&end);
+  if (!gtk_text_iter_equal (&begin, &end) &&
+      gtk_text_iter_compare (&begin, &iter) <= 0 &&
+      gtk_text_iter_compare (&iter, &end) <= 0)
+    {
+      /* Ignore very long words */
+      if ((gtk_text_iter_get_offset (&end) - gtk_text_iter_get_offset (&begin)) < MAX_WORD_CHARS)
+        {
+          word = gtk_text_iter_get_slice (&begin, &end);
+
+          if (spelling_checker_check_word (self->checker, word, -1))
+            g_clear_pointer (&word, g_free);
+          else
+            corrections = spelling_checker_list_corrections (self->checker, word);
+        }
+    }
+
+cleanup:
+  g_set_str (&self->word_under_cursor, word);
+
+  if (self->menu)
+    spelling_menu_set_corrections (self->menu, word, (const char * const *)corrections);
+}
+
 static gboolean
 spelling_text_buffer_adapter_cursor_moved_cb (gpointer data)
 {
@@ -587,6 +642,8 @@ spelling_text_buffer_adapter_cursor_moved_cb (gpointer data)
     mark_unchecked (self,
                     gtk_text_iter_get_offset (&begin),
                     gtk_text_iter_get_offset (&end) - gtk_text_iter_get_offset (&begin));
+
+  remember_word_under_cursor (self);
 
   return G_SOURCE_REMOVE;
 }
@@ -714,6 +771,7 @@ spelling_text_buffer_adapter_finalize (GObject *object)
 {
   SpellingTextBufferAdapter *self = (SpellingTextBufferAdapter *)object;
 
+  g_clear_pointer (&self->word_under_cursor, g_free);
   g_clear_object (&self->checker);
   g_clear_object (&self->no_spell_check_tag);
   g_clear_pointer (&self->region, _cjh_text_region_free);
@@ -995,11 +1053,7 @@ spelling_text_buffer_adapter_get_menu_model (SpellingTextBufferAdapter *self)
   g_return_val_if_fail (SPELLING_IS_TEXT_BUFFER_ADAPTER (self), NULL);
 
   if (self->menu == NULL)
-    {
-      self->menu = spelling_menu_new ();
-
-      /* TODO: */
-    }
+    self->menu = spelling_menu_new ();
 
   return self->menu;
 }
@@ -1039,4 +1093,50 @@ spelling_enabled_action (SpellingTextBufferAdapter *self,
   g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
 
   spelling_text_buffer_adapter_set_enabled (self, !self->enabled);
+}
+
+static void
+spelling_correct_action (SpellingTextBufferAdapter *self,
+                         GVariant                  *param)
+{
+  g_autofree char *slice = NULL;
+  GtkTextBuffer *buffer;
+  const char *word;
+  GtkTextIter begin, end;
+
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+  g_assert (g_variant_is_of_type (param, G_VARIANT_TYPE_STRING));
+
+  if (self->buffer == NULL)
+    return;
+
+  buffer = GTK_TEXT_BUFFER (self->buffer);
+  word = g_variant_get_string (param, NULL);
+
+  /* We don't deal with selections (yet?) */
+  if (gtk_text_buffer_get_selection_bounds (buffer, &begin, &end))
+    return;
+
+  /* TODO: For some languages, we might need to use spelling_iter
+   * to get the same boundaries.
+   */
+
+  if (!gtk_text_iter_starts_word (&begin))
+    gtk_text_iter_backward_word_start (&begin);
+
+  if (!gtk_text_iter_ends_word (&end))
+    gtk_text_iter_forward_word_end (&end);
+
+  slice = gtk_text_iter_get_slice (&begin, &end);
+
+  if (g_strcmp0 (slice, self->word_under_cursor) != 0)
+    {
+      g_debug ("Words do not match, will not replace.");
+      return;
+    }
+
+  gtk_text_buffer_begin_user_action (buffer);
+  gtk_text_buffer_delete (buffer, &begin, &end);
+  gtk_text_buffer_insert (buffer, &begin, word, -1);
+  gtk_text_buffer_end_user_action (buffer);
 }
