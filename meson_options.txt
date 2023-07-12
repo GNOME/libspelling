@@ -1,2 +1,3 @@
+option('docs', type: 'boolean', value: true, description: 'Generate documentation')
 option('enchant', type: 'feature', value: 'enabled', description: 'Use enchant for spellchecking')
 option('vapi', type: 'boolean', value: true, description: 'Generate Vala vapi')

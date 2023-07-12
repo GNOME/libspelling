@@ -123,3 +123,7 @@ add_project_arguments(['-I' + meson.project_build_root()], language: 'c')
 subdir('lib')
 subdir('test')
 subdir('testsuite')
+
+if get_option('docs')
+  subdir('docs')
+endif
