@@ -1,3 +1,35 @@
 # libspelling
 
 A spellcheck library for GTK 4.
+
+This library is heavily based upon GNOME Text Editor an GNOME Builder's
+spellcheck implementation. However, it is licensed LGPLv2.1+.
+
+## Example
+
+### In C
+
+```c
+SpellingChecker *checker = spelling_checker_get_default ();
+g_autoptr(SpellingTextBufferAdapter) adapter = spelling_text_buffer_adapter_new (source_buffer, checker);
+GMenuModel *extra_menu = spelling_text_buffer_adapter_get_menu_model (adapter);
+
+gtk_text_view_set_extra_menu (GTK_TEXT_VIEW (source_view), extra_menu);
+gtk_widget_insert_action_group (GTK_WIDGET (source_view), "spelling", G_ACTION_GROUP (adapter));
+spelling_text_buffer_adapter_set_enabled (adapter, TRUE);
+```
+
+### In Python
+
+```
+from gi.repository import Spelling
+
+checker = Spelling.Checker.get_default()
+adapter = Spelling.TextBufferAdapter.new(buffer, checker)
+extra_menu = adapter.get_menu_model()
+
+view.set_extra_menu(extra_menu)
+view.insert_action_group('spelling', adapter)
+
+adapter.set_enabled(True)
+```
