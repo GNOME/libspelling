@@ -1,0 +1,34 @@
+stages:
+    - docs
+    - deploy
+
+variables:
+    FEDORA_IMAGE: "registry.gitlab.gnome.org/gnome/gtksourceview/fedora:latest"
+
+reference:
+    image: $FEDORA_IMAGE
+    stage: docs
+    needs: []
+    variables:
+        MESON_FLAGS: "-Denchant=enabled -Dvapi=true"
+    script:
+        - sudo dnf install -y gtk4-devel gtksourceview5-devel vala enchant2-devel
+        - mkdir -p pfx/
+        - meson ${MESON_FLAGS} --prefix=${PWD}/pfx _build
+        - ninja -C _build install
+        - mkdir -p _reference/
+        - mv pfx/share/doc/libspelling-1/ _reference/
+    artifacts:
+        paths:
+            - _reference
+
+pages:
+    stage: deploy
+    needs: ['reference']
+    script:
+        - mv _reference public/
+    artifacts:
+        paths:
+            - public
+    only:
+        - main
