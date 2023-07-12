@@ -37,3 +37,18 @@ view.insert_action_group('spelling', adapter)
 
 adapter.set_enabled(True)
 ```
+
+### In JavaScript
+
+```
+const Spelling = imports.gi.Spelling;
+
+let checker = Spelling.Checker.get_default()
+let adapter = Spelling.TextBufferAdapter.new(buffer, checker)
+let extra_menu = adapter.get_menu_model()
+
+view.set_extra_menu(extra_menu)
+view.insert_action_group('spelling', adapter)
+
+adapter.set_enabled(true)
+```
