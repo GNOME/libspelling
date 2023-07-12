@@ -235,9 +235,11 @@ spelling_text_buffer_adapter_update_range (SpellingTextBufferAdapter *self,
 
   g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
 
+#if GTK_SOURCE_CHECK_VERSION(5,9,0)
   /* Ignore while we are loading */
   if (gtk_source_buffer_get_loading (self->buffer))
     return TRUE;
+#endif
 
   extra_word_chars = spelling_checker_get_extra_word_chars (self->checker);
   cursor = spelling_cursor_new (GTK_TEXT_BUFFER (self->buffer),
