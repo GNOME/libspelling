@@ -25,15 +25,13 @@ main (int   argc,
       char *argv[])
 {
   g_autoptr(SpellingTextBufferAdapter) adapter = NULL;
-  g_autoptr(SpellingChecker) checker = NULL;
+  SpellingChecker *checker = NULL;
   GtkScrolledWindow *scroller;
-  SpellingProvider *default_provider;
   GtkSourceBuffer *source_buffer;
   GtkSourceView *source_view;
   GMenuModel *extra_menu;
   GtkWindow *window;
   GMainLoop *main_loop;
-  const char *default_code;
 
   gtk_init ();
   gtk_source_init ();
@@ -72,9 +70,7 @@ main (int   argc,
                             main_loop);
 
   /* Setup spellchecking */
-  default_provider = spelling_provider_get_default ();
-  default_code = spelling_provider_get_default_code (default_provider);
-  checker = spelling_checker_new (default_provider, default_code);
+  checker = spelling_checker_get_default ();
   adapter = spelling_text_buffer_adapter_new (source_buffer, checker);
   extra_menu = spelling_text_buffer_adapter_get_menu_model (adapter);
   gtk_text_view_set_extra_menu (GTK_TEXT_VIEW (source_view), extra_menu);

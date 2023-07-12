@@ -38,6 +38,8 @@ SPELLING_AVAILABLE_IN_ALL
 G_DECLARE_FINAL_TYPE (SpellingChecker, spelling_checker, SPELLING, CHECKER, GObject)
 
 SPELLING_AVAILABLE_IN_ALL
+SpellingChecker   *spelling_checker_get_default          (void);
+SPELLING_AVAILABLE_IN_ALL
 SpellingChecker   *spelling_checker_new                  (SpellingProvider *provider,
                                                           const char       *language);
 SPELLING_AVAILABLE_IN_ALL

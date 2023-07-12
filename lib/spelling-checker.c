@@ -333,3 +333,27 @@ spelling_checker_get_extra_word_chars (SpellingChecker *self)
 
   return "";
 }
+
+/**
+ * spelling_checker_get_default:
+ *
+ * Gets a default #SpellingChecker using the default provider and language.
+ *
+ * Returns: (transfer none): a #SpellingChecker
+ */
+SpellingChecker *
+spelling_checker_get_default (void)
+{
+  static SpellingChecker *instance;
+
+  if (instance == NULL)
+    {
+      SpellingProvider *provider = spelling_provider_get_default ();
+      const char *code = spelling_provider_get_default_code (provider);
+
+      instance = spelling_checker_new (provider, code);
+      g_object_add_weak_pointer (G_OBJECT (instance), (gpointer *)&instance);
+    }
+
+  return instance;
+}
