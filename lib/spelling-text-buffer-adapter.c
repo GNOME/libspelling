@@ -27,7 +27,7 @@
 #include "spelling-checker.h"
 #include "spelling-cursor-private.h"
 #include "spelling-language.h"
-#include "spelling-menu.h"
+#include "spelling-menu-private.h"
 #include "spelling-text-buffer-adapter.h"
 
 #define RUN_UNCHECKED      GSIZE_TO_POINTER(0)

@@ -24,7 +24,7 @@
 #include <glib/gi18n.h>
 
 #include "spelling-language-info.h"
-#include "spelling-menu.h"
+#include "spelling-menu-private.h"
 #include "spelling-provider.h"
 
 #define MAX_CORRECTIONS 5

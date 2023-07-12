@@ -1,5 +1,5 @@
 /*
- * spelling-menu.h
+ * spelling-menu-private.h
  *
  * Copyright 2021-2023 Christian Hergert <chergert@redhat.com>
  *
@@ -21,20 +21,11 @@
 
 #pragma once
 
-#if !defined(LIBSPELLING_INSIDE) && !defined(LIBSPELLING_COMPILATION)
-# error "Only <libspelling.h> can be included directly."
-#endif
-
 #include <gio/gio.h>
-
-#include "spelling-types.h"
-#include "spelling-version-macros.h"
 
 G_BEGIN_DECLS
 
-SPELLING_AVAILABLE_IN_ALL
 GMenuModel *spelling_menu_new             (void);
-SPELLING_AVAILABLE_IN_ALL
 void        spelling_menu_set_corrections (GMenuModel         *menu,
                                            const char         *word,
                                            const char * const *words);

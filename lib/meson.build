@@ -4,6 +4,7 @@ libspelling_private_sources = [
   'cjhtextregion.c',
   'spelling-cursor.c',
   'spelling-empty-provider.c',
+  'spelling-menu.c',
 ]
 
 libspelling_public_sources = [
@@ -11,7 +12,6 @@ libspelling_public_sources = [
   'spelling-checker.c',
   'spelling-language.c',
   'spelling-language-info.c',
-  'spelling-menu.c',
   'spelling-provider.c',
   'spelling-text-buffer-adapter.c',
 ]
@@ -22,7 +22,6 @@ libspelling_public_headers = [
   'spelling-init.h',
   'spelling-language.h',
   'spelling-language-info.h',
-  'spelling-menu.h',
   'spelling-provider.h',
   'spelling-text-buffer-adapter.h',
   'spelling-types.h',
