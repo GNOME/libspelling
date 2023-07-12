@@ -53,7 +53,7 @@ configure_file(
          output: 'spelling-version.h',
   configuration: version_conf,
         install: true,
-    install_dir: join_paths(get_option('includedir'), 'libspelling')
+    install_dir: join_paths(get_option('includedir'), 'libspelling-' + api_version)
 )
 
 libspelling_static = static_library( 'spelling-' + api_version, libspelling_sources,
