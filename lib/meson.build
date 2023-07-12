@@ -108,3 +108,12 @@ libspelling_gir = gnome.generate_gir(libspelling,
                header: 'libspelling.h',
            extra_args: '-DLIBSPELLING_COMPILATION',
 )
+
+if get_option('vapi')
+  spelling_vapi = gnome.generate_vapi('libspelling-' + api_version,
+          sources: libspelling_gir.get(0),
+          install: true,
+      install_dir: join_paths(datadir, 'vala', 'vapi'),
+         packages: ['gio-2.0', 'gtk4', 'gtksourceview-5'],
+  )
+endif

@@ -6,6 +6,9 @@ project('libspelling', 'c',
 
 cc = meson.get_compiler('c')
 
+prefix = get_option('prefix')
+datadir = join_paths(prefix, get_option('datadir'))
+
 config_h = configuration_data()
 config_h.set_quoted('PACKAGE_VERSION', meson.project_version())
 config_h.set_quoted('GETTEXT_PACKAGE', 'libspelling')
