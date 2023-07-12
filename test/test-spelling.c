@@ -49,7 +49,9 @@ main (int   argc,
                            "hscrollbar-policy", GTK_POLICY_NEVER,
                            NULL);
   source_buffer = g_object_new (GTK_SOURCE_TYPE_BUFFER,
+#if 0
                                 "language", gtk_source_language_manager_get_language (gtk_source_language_manager_get_default (), "c"),
+#endif
                                 "style-scheme", gtk_source_style_scheme_manager_get_scheme (gtk_source_style_scheme_manager_get_default (), "Adwaita"),
                                 "enable-undo", TRUE,
                                 NULL);
