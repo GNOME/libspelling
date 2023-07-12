@@ -92,7 +92,7 @@ pkg.generate(
          name: 'libspelling',
      filebase: 'libspelling-' + api_version,
       version: meson.project_version(),
-      subdirs: 'libspelling',
+      subdirs: 'libspelling-' + api_version,
      requires: ['gio-2.0', 'gtk4', 'gtksourceview-5'],
   install_dir: join_paths(get_option('libdir'), 'pkgconfig')
 )
