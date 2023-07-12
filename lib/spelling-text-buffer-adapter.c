@@ -76,20 +76,23 @@ struct _SpellingTextBufferAdapter
   guint            enabled : 1;
 };
 
-static void spelling_add_action     (SpellingTextBufferAdapter *self,
-                                     GVariant                  *param);
-static void spelling_ignore_action  (SpellingTextBufferAdapter *self,
-                                     GVariant                  *param);
-static void spelling_enabled_action (SpellingTextBufferAdapter *self,
-                                     GVariant                  *param);
-static void spelling_correct_action (SpellingTextBufferAdapter *self,
-                                     GVariant                  *param);
+static void spelling_add_action      (SpellingTextBufferAdapter *self,
+                                      GVariant                  *param);
+static void spelling_ignore_action   (SpellingTextBufferAdapter *self,
+                                      GVariant                  *param);
+static void spelling_enabled_action  (SpellingTextBufferAdapter *self,
+                                      GVariant                  *param);
+static void spelling_correct_action  (SpellingTextBufferAdapter *self,
+                                      GVariant                  *param);
+static void spelling_language_action (SpellingTextBufferAdapter *self,
+                                      GVariant                  *param);
 
 EGG_DEFINE_ACTION_GROUP (SpellingTextBufferAdapter, spelling_text_buffer_adapter, {
   { "add", spelling_add_action, "s" },
   { "correct", spelling_correct_action, "s" },
   { "enabled", spelling_enabled_action, NULL, "false" },
   { "ignore", spelling_ignore_action, "s" },
+  { "language", spelling_language_action, "s", "''" },
 })
 
 G_DEFINE_FINAL_TYPE_WITH_CODE (SpellingTextBufferAdapter, spelling_text_buffer_adapter, G_TYPE_OBJECT,
@@ -942,31 +945,70 @@ spelling_text_buffer_adapter_get_checker (SpellingTextBufferAdapter *self)
   return self->checker;
 }
 
+static void
+spelling_text_buffer_adapter_checker_notify_language (SpellingTextBufferAdapter *self,
+                                                      GParamSpec                *pspec,
+                                                      SpellingChecker           *checker)
+{
+  const char *code;
+
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+  g_assert (SPELLING_IS_CHECKER (checker));
+
+  if (!(code = spelling_checker_get_language (checker)))
+    code = "";
+
+  spelling_text_buffer_adapter_set_action_state (self, "language", g_variant_new_string (code));
+}
+
 void
 spelling_text_buffer_adapter_set_checker (SpellingTextBufferAdapter *self,
                                           SpellingChecker           *checker)
 {
+  const char *code = "";
+  guint length;
+
   g_return_if_fail (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
   g_return_if_fail (!checker || SPELLING_IS_CHECKER (checker));
 
-  if (g_set_object (&self->checker, checker))
+  if (self->checker == checker)
+    return;
+
+  if (self->checker)
+    g_signal_handlers_disconnect_by_func (self->checker,
+                                          G_CALLBACK (spelling_text_buffer_adapter_checker_notify_language),
+                                          self);
+
+  g_set_object (&self->checker, checker);
+
+  if (checker)
     {
-      gsize length = _cjh_text_region_get_length (self->region);
-
-      gtk_source_scheduler_clear (&self->update_source);
-
-      if (length > 0)
-        {
-          _cjh_text_region_remove (self->region, 0, length);
-          _cjh_text_region_insert (self->region, 0, length, RUN_UNCHECKED);
-          g_assert_cmpint (length, ==, _cjh_text_region_get_length (self->region));
-        }
-
-      spelling_text_buffer_adapter_queue_update (self);
-
-      g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_CHECKER]);
-      g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_LANGUAGE]);
+      g_signal_connect_object (self->checker,
+                               "notify::language",
+                               G_CALLBACK (spelling_text_buffer_adapter_checker_notify_language),
+                               self,
+                               G_CONNECT_SWAPPED);
+      code = spelling_checker_get_language (checker);
     }
+
+  length = _cjh_text_region_get_length (self->region);
+
+  gtk_source_scheduler_clear (&self->update_source);
+
+  if (length > 0)
+    {
+      _cjh_text_region_remove (self->region, 0, length);
+      _cjh_text_region_insert (self->region, 0, length, RUN_UNCHECKED);
+      g_assert_cmpint (length, ==, _cjh_text_region_get_length (self->region));
+
+    }
+
+  spelling_text_buffer_adapter_queue_update (self);
+
+  spelling_text_buffer_adapter_set_action_state (self, "language", g_variant_new_string (code));
+
+  g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_CHECKER]);
+  g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_LANGUAGE]);
 }
 
 /**
@@ -1139,4 +1181,19 @@ spelling_correct_action (SpellingTextBufferAdapter *self,
   gtk_text_buffer_delete (buffer, &begin, &end);
   gtk_text_buffer_insert (buffer, &begin, word, -1);
   gtk_text_buffer_end_user_action (buffer);
+}
+
+static void
+spelling_language_action (SpellingTextBufferAdapter *self,
+                          GVariant                  *param)
+{
+  const char *code;
+
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+  g_assert (g_variant_is_of_type (param, G_VARIANT_TYPE_STRING));
+
+  code = g_variant_get_string (param, NULL);
+
+  if (self->checker)
+    spelling_checker_set_language (self->checker, code);
 }
