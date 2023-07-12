@@ -23,6 +23,7 @@
 
 #include <glib/gi18n.h>
 
+#include "spelling-compat-private.h"
 #include "spelling-language-info.h"
 #include "spelling-menu-private.h"
 #include "spelling-provider.h"

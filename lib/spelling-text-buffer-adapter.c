@@ -24,6 +24,7 @@
 #include "cjhtextregionprivate.h"
 #include "egg-action-group.h"
 
+#include "spelling-compat-private.h"
 #include "spelling-checker.h"
 #include "spelling-cursor-private.h"
 #include "spelling-language.h"
