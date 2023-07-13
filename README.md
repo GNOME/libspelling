@@ -2,7 +2,7 @@
 
 A spellcheck library for GTK 4.
 
-This library is heavily based upon GNOME Text Editor an GNOME Builder's
+This library is heavily based upon GNOME Text Editor and GNOME Builder's
 spellcheck implementation. However, it is licensed LGPLv2.1+.
 
 ## Documentation
