@@ -10,6 +10,7 @@ description = "A GNOME library for spellchecking"
 dependencies = ["Gio-2.0", "Gtk-4.0", "GtkSource-5"]
 devhelp = true
 search_index = true
+logo_url = "libspelling.svg"
 
   [dependencies."GObject-2.0"]
   name = "GObject"
@@ -48,6 +49,9 @@ base_url = "https://gitlab.gnome.org/chergert/libspelling/-/blob/main/"
 # The same order will be used when generating the index
 content_files = [
   "overview.md",
+]
+content_images = [
+  "libspelling.svg",
 ]
 
 urlmap_file = "urlmap.js"
