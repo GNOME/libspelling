@@ -52,3 +52,18 @@ view.insert_action_group('spelling', adapter)
 
 adapter.set_enabled(true)
 ```
+
+### In Rust
+
+Add the [bindings dependency](https://crates.io/crates/libspelling) to your Cargo.toml
+
+```rust
+let checker = libspelling:::Checker::default();
+let adapter = libspelling::TextBufferAdapter::new(&buffer, &checker);
+let extra_menu = adapter.menu_model();
+
+view.set_extra_menu(Some(&extra_menu));
+view.insert_action_group("spelling", Some(&adapter));
+
+adapter.set_enabled(true);
+```
