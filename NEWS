@@ -1,0 +1,7 @@
+libspelling 0.2.0
+=================
+
+This is the first stable release of libspelling, for GNOME 45
+
+While I don't promise that we won't break ABI before 1.0, we do aim
+to try for that.
