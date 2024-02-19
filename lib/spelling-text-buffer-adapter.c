@@ -63,10 +63,12 @@ struct _SpellingTextBufferAdapter
   GtkSourceBuffer *buffer;
   SpellingChecker *checker;
   CjhTextRegion   *region;
-  GtkTextTag      *tag;
   GtkTextTag      *no_spell_check_tag;
   GMenuModel      *menu;
   char            *word_under_cursor;
+
+  /* Borrowed pointers */
+  GtkTextTag      *tag;
 
   guint            cursor_position;
   guint            incoming_cursor_position;
@@ -776,6 +778,8 @@ static void
 spelling_text_buffer_adapter_finalize (GObject *object)
 {
   SpellingTextBufferAdapter *self = (SpellingTextBufferAdapter *)object;
+
+  self->tag = NULL;
 
   g_clear_pointer (&self->word_under_cursor, g_free);
   g_clear_object (&self->checker);
