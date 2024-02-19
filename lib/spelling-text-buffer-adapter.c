@@ -68,6 +68,7 @@ struct _SpellingTextBufferAdapter
   char            *word_under_cursor;
 
   /* Borrowed pointers */
+  GtkTextMark     *insert_mark;
   GtkTextTag      *tag;
 
   guint            cursor_position;
@@ -465,6 +466,8 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
 
   g_set_weak_pointer (&self->buffer, buffer);
 
+  self->insert_mark = gtk_text_buffer_get_insert (GTK_TEXT_BUFFER (buffer));
+
   g_signal_group_set_target (self->buffer_signals, buffer);
 
   gtk_text_buffer_get_bounds (GTK_TEXT_BUFFER (buffer), &begin, &end);
@@ -757,15 +760,19 @@ spelling_text_buffer_adapter_after_delete_range (SpellingTextBufferAdapter *self
 
 static void
 spelling_text_buffer_adapter_cursor_moved (SpellingTextBufferAdapter *self,
-                                           guint                      position)
+                                           GtkSourceBuffer           *buffer)
 {
-  g_return_if_fail (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
-  g_return_if_fail (self->buffer != NULL);
+  GtkTextIter iter;
+
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+  g_assert (GTK_SOURCE_IS_BUFFER (buffer));
 
   if (!self->enabled)
     return;
 
-  self->incoming_cursor_position = position;
+  gtk_text_buffer_get_iter_at_mark (GTK_TEXT_BUFFER (buffer), &iter, self->insert_mark);
+  self->incoming_cursor_position = gtk_text_iter_get_offset (&iter);
+
   g_clear_handle_id (&self->queued_cursor_moved, g_source_remove);
   self->queued_cursor_moved = g_timeout_add_full (G_PRIORITY_LOW,
                                                   INVALIDATE_DELAY_MSECS,
@@ -780,6 +787,7 @@ spelling_text_buffer_adapter_finalize (GObject *object)
   SpellingTextBufferAdapter *self = (SpellingTextBufferAdapter *)object;
 
   self->tag = NULL;
+  self->insert_mark = NULL;
 
   g_clear_pointer (&self->word_under_cursor, g_free);
   g_clear_object (&self->checker);
