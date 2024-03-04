@@ -1,3 +1,9 @@
+libspelling 0.2.1
+=================
+
+ * Fix licenses to all be LGPLv2.1+
+ * Fix handling of cursor-moved signal
+
 libspelling 0.2.0
 =================
 
