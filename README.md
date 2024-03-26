@@ -7,7 +7,7 @@ spellcheck implementation. However, it is licensed LGPLv2.1+.
 
 ## Documentation
 
-[Our documentation](https://chergert.pages.gitlab.gnome.org/libspelling/libspelling-1/) is updated on every commit.
+[Our documentation](https://gnome.pages.gitlab.gnome.org/libspelling/libspelling-1/) is updated on every commit.
 
 ## Example
 
