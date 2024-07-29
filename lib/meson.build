@@ -11,7 +11,7 @@ libspelling_public_sources = [
   'spelling-init.c',
   'spelling-checker.c',
   'spelling-dictionary.c',
-  'spelling-language-info.c',
+  'spelling-language.c',
   'spelling-provider.c',
   'spelling-text-buffer-adapter.c',
 ]
@@ -21,7 +21,7 @@ libspelling_public_headers = [
   'spelling-checker.h',
   'spelling-dictionary.h',
   'spelling-init.h',
-  'spelling-language-info.h',
+  'spelling-language.h',
   'spelling-provider.h',
   'spelling-text-buffer-adapter.h',
   'spelling-types.h',

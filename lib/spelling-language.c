@@ -1,5 +1,5 @@
 /*
- * spelling-language-info.c
+ * spelling-language.c
  *
  * Copyright 2021-2023 Christian Hergert <chergert@redhat.com>
  *
@@ -21,9 +21,9 @@
 
 #include "config.h"
 
-#include "spelling-language-info-private.h"
+#include "spelling-language-private.h"
 
-struct _SpellingLanguageInfo
+struct _SpellingLanguage
 {
   GObject parent_instance;
   char *name;
@@ -31,7 +31,7 @@ struct _SpellingLanguageInfo
   char *group;
 };
 
-G_DEFINE_FINAL_TYPE (SpellingLanguageInfo, spelling_language_info, G_TYPE_OBJECT)
+G_DEFINE_FINAL_TYPE (SpellingLanguage, spelling_language, G_TYPE_OBJECT)
 
 enum {
   PROP_0,
@@ -44,18 +44,18 @@ enum {
 static GParamSpec *properties[N_PROPS];
 
 /**
- * spelling_language_info_new:
+ * spelling_language_new:
  *
- * Create a new #SpellingLanguageInfo.
+ * Create a new #SpellingLanguage.
  *
- * Returns: (transfer full): a newly created #SpellingLanguageInfo
+ * Returns: (transfer full): a newly created #SpellingLanguage
  */
-SpellingLanguageInfo *
-spelling_language_info_new (const char *name,
-                            const char *code,
-                            const char *group)
+SpellingLanguage *
+spelling_language_new (const char *name,
+                       const char *code,
+                       const char *group)
 {
-  return g_object_new (SPELLING_TYPE_LANGUAGE_INFO,
+  return g_object_new (SPELLING_TYPE_LANGUAGE,
                        "name", name,
                        "code", code,
                        "group", group,
@@ -63,37 +63,37 @@ spelling_language_info_new (const char *name,
 }
 
 static void
-spelling_language_info_finalize (GObject *object)
+spelling_language_finalize (GObject *object)
 {
-  SpellingLanguageInfo *self = (SpellingLanguageInfo *)object;
+  SpellingLanguage *self = (SpellingLanguage *)object;
 
   g_clear_pointer (&self->name, g_free);
   g_clear_pointer (&self->code, g_free);
   g_clear_pointer (&self->group, g_free);
 
-  G_OBJECT_CLASS (spelling_language_info_parent_class)->finalize (object);
+  G_OBJECT_CLASS (spelling_language_parent_class)->finalize (object);
 }
 
 static void
-spelling_language_info_get_property (GObject    *object,
-                                     guint       prop_id,
-                                     GValue     *value,
-                                     GParamSpec *pspec)
+spelling_language_get_property (GObject    *object,
+                                guint       prop_id,
+                                GValue     *value,
+                                GParamSpec *pspec)
 {
-  SpellingLanguageInfo *self = SPELLING_LANGUAGE_INFO (object);
+  SpellingLanguage *self = SPELLING_LANGUAGE (object);
 
   switch (prop_id)
     {
     case PROP_NAME:
-      g_value_set_string (value, spelling_language_info_get_name (self));
+      g_value_set_string (value, spelling_language_get_name (self));
       break;
 
     case PROP_CODE:
-      g_value_set_string (value, spelling_language_info_get_code (self));
+      g_value_set_string (value, spelling_language_get_code (self));
       break;
 
     case PROP_GROUP:
-      g_value_set_string (value, spelling_language_info_get_group (self));
+      g_value_set_string (value, spelling_language_get_group (self));
       break;
 
     default:
@@ -102,12 +102,12 @@ spelling_language_info_get_property (GObject    *object,
 }
 
 static void
-spelling_language_info_set_property (GObject      *object,
-                                     guint         prop_id,
-                                     const GValue *value,
-                                     GParamSpec   *pspec)
+spelling_language_set_property (GObject      *object,
+                                guint         prop_id,
+                                const GValue *value,
+                                GParamSpec   *pspec)
 {
-  SpellingLanguageInfo *self = SPELLING_LANGUAGE_INFO (object);
+  SpellingLanguage *self = SPELLING_LANGUAGE (object);
 
   switch (prop_id)
     {
@@ -129,13 +129,13 @@ spelling_language_info_set_property (GObject      *object,
 }
 
 static void
-spelling_language_info_class_init (SpellingLanguageInfoClass *klass)
+spelling_language_class_init (SpellingLanguageClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  object_class->finalize = spelling_language_info_finalize;
-  object_class->get_property = spelling_language_info_get_property;
-  object_class->set_property = spelling_language_info_set_property;
+  object_class->finalize = spelling_language_finalize;
+  object_class->get_property = spelling_language_get_property;
+  object_class->set_property = spelling_language_set_property;
 
   properties[PROP_NAME] =
     g_param_spec_string ("name",
@@ -162,30 +162,30 @@ spelling_language_info_class_init (SpellingLanguageInfoClass *klass)
 }
 
 static void
-spelling_language_info_init (SpellingLanguageInfo *self)
+spelling_language_init (SpellingLanguage *self)
 {
 }
 
 const char *
-spelling_language_info_get_name (SpellingLanguageInfo *self)
+spelling_language_get_name (SpellingLanguage *self)
 {
-  g_return_val_if_fail (SPELLING_IS_LANGUAGE_INFO (self), NULL);
+  g_return_val_if_fail (SPELLING_IS_LANGUAGE (self), NULL);
 
   return self->name;
 }
 
 const char *
-spelling_language_info_get_code (SpellingLanguageInfo *self)
+spelling_language_get_code (SpellingLanguage *self)
 {
-  g_return_val_if_fail (SPELLING_IS_LANGUAGE_INFO (self), NULL);
+  g_return_val_if_fail (SPELLING_IS_LANGUAGE (self), NULL);
 
   return self->code;
 }
 
 const char *
-spelling_language_info_get_group (SpellingLanguageInfo *self)
+spelling_language_get_group (SpellingLanguage *self)
 {
-  g_return_val_if_fail (SPELLING_IS_LANGUAGE_INFO (self), NULL);
+  g_return_val_if_fail (SPELLING_IS_LANGUAGE (self), NULL);
 
   return self->group;
 }

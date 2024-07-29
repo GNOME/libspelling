@@ -21,7 +21,7 @@
 #include "config.h"
 
 #include "spelling-empty-provider-private.h"
-#include "spelling-language-info.h"
+#include "spelling-language.h"
 
 struct _SpellingEmptyProvider
 {
@@ -39,7 +39,7 @@ spelling_empty_provider_new (void)
 static GListModel *
 empty_list_languages (SpellingProvider *provider)
 {
-  return G_LIST_MODEL (g_list_store_new (SPELLING_TYPE_LANGUAGE_INFO));
+  return G_LIST_MODEL (g_list_store_new (SPELLING_TYPE_LANGUAGE));
 }
 
 static SpellingDictionary *

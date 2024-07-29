@@ -28,7 +28,7 @@
 
 #include <gio/gio.h>
 
-#include "spelling-language-info-private.h"
+#include "spelling-language-private.h"
 
 #include "spelling-enchant-dictionary.h"
 #include "spelling-enchant-provider.h"
@@ -150,7 +150,7 @@ list_languages_cb (const char * const lang_tag,
 
   if (name != NULL)
     {
-      g_autoptr(SpellingLanguageInfo) language = spelling_language_info_new (name, lang_tag, group);
+      g_autoptr(SpellingLanguage) language = spelling_language_new (name, lang_tag, group);
 
       g_list_store_append (store, language);
     }
@@ -163,7 +163,7 @@ static GListModel *
 spelling_enchant_provider_list_languages (SpellingProvider *provider)
 {
   EnchantBroker *broker = get_broker ();
-  GListStore *store = g_list_store_new (SPELLING_TYPE_LANGUAGE_INFO);
+  GListStore *store = g_list_store_new (SPELLING_TYPE_LANGUAGE);
   enchant_broker_list_dicts (broker, list_languages_cb, store);
   return G_LIST_MODEL (store);
 }

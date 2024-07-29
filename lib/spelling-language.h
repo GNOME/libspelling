@@ -1,5 +1,5 @@
 /*
- * spelling-language-info.h
+ * spelling-language.h
  *
  * Copyright 2021-2023 Christian Hergert <chergert@redhat.com>
  *
@@ -31,16 +31,16 @@
 
 G_BEGIN_DECLS
 
-#define SPELLING_TYPE_LANGUAGE_INFO (spelling_language_info_get_type())
+#define SPELLING_TYPE_LANGUAGE (spelling_language_get_type())
 
 SPELLING_AVAILABLE_IN_ALL
-G_DECLARE_FINAL_TYPE (SpellingLanguageInfo, spelling_language_info, SPELLING, LANGUAGE_INFO, GObject)
+G_DECLARE_FINAL_TYPE (SpellingLanguage, spelling_language, SPELLING, LANGUAGE, GObject)
 
 SPELLING_AVAILABLE_IN_ALL
-const char *spelling_language_info_get_group (SpellingLanguageInfo *self);
+const char *spelling_language_get_group (SpellingLanguage *self);
 SPELLING_AVAILABLE_IN_ALL
-const char *spelling_language_info_get_name  (SpellingLanguageInfo *self);
+const char *spelling_language_get_name  (SpellingLanguage *self);
 SPELLING_AVAILABLE_IN_ALL
-const char *spelling_language_info_get_code  (SpellingLanguageInfo *self);
+const char *spelling_language_get_code  (SpellingLanguage *self);
 
 G_END_DECLS

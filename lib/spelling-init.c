@@ -24,7 +24,7 @@
 #include "spelling-checker.h"
 #include "spelling-dictionary.h"
 #include "spelling-init.h"
-#include "spelling-language-info.h"
+#include "spelling-language.h"
 #include "spelling-provider.h"
 #include "spelling-text-buffer-adapter.h"
 
@@ -41,7 +41,7 @@ _spelling_init (void)
     {
       g_type_ensure (SPELLING_TYPE_CHECKER);
       g_type_ensure (SPELLING_TYPE_DICTIONARY);
-      g_type_ensure (SPELLING_TYPE_LANGUAGE_INFO);
+      g_type_ensure (SPELLING_TYPE_LANGUAGE);
       g_type_ensure (SPELLING_TYPE_PROVIDER);
       g_type_ensure (SPELLING_TYPE_TEXT_BUFFER_ADAPTER);
       g_once_init_leave (&initialized, TRUE);

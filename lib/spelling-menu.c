@@ -24,7 +24,7 @@
 #include <glib/gi18n.h>
 
 #include "spelling-compat-private.h"
-#include "spelling-language-info.h"
+#include "spelling-language.h"
 #include "spelling-menu-private.h"
 #include "spelling-provider.h"
 
@@ -181,8 +181,8 @@ count_groups (GListModel *model)
 
   for (guint i = 0; i < n_items; i++)
     {
-      g_autoptr(SpellingLanguageInfo) language = g_list_model_get_item (model, i);
-      const char *group = spelling_language_info_get_group (language);
+      g_autoptr(SpellingLanguage) language = g_list_model_get_item (model, i);
+      const char *group = spelling_language_get_group (language);
 
       if (group != NULL && group[0] != 0 && !g_hash_table_contains (groups, group))
         g_hash_table_insert (groups, (char *)group, NULL);
@@ -213,8 +213,8 @@ populate_languages (GMenu *menu)
     {
       for (guint i = 0; i < n_items; i++)
         {
-          g_autoptr(SpellingLanguageInfo) language = g_list_model_get_item (languages, i);
-          const char *group = spelling_language_info_get_group (language);
+          g_autoptr(SpellingLanguage) language = g_list_model_get_item (languages, i);
+          const char *group = spelling_language_get_group (language);
           GMenu *group_menu;
 
           if (group == NULL || group[0] == 0)
@@ -233,10 +233,10 @@ populate_languages (GMenu *menu)
 
   for (guint i = 0; i < n_items; i++)
     {
-      g_autoptr(SpellingLanguageInfo) language = g_list_model_get_item (languages, i);
-      const char *name = spelling_language_info_get_name (language);
-      const char *group = spelling_language_info_get_group (language);
-      const char *code = spelling_language_info_get_code (language);
+      g_autoptr(SpellingLanguage) language = g_list_model_get_item (languages, i);
+      const char *name = spelling_language_get_name (language);
+      const char *group = spelling_language_get_group (language);
+      const char *code = spelling_language_get_code (language);
       g_autoptr(GMenuItem) item = NULL;
       GMenu *group_menu;
 
