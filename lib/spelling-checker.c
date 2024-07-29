@@ -24,14 +24,14 @@
 #include <string.h>
 
 #include "spelling-checker.h"
-#include "spelling-language.h"
+#include "spelling-dictionary.h"
 #include "spelling-provider.h"
 
 struct _SpellingChecker
 {
-  GObject           parent_instance;
-  SpellingProvider *provider;
-  SpellingLanguage *language;
+  GObject             parent_instance;
+  SpellingProvider   *provider;
+  SpellingDictionary *dictionary;
 };
 
 G_DEFINE_FINAL_TYPE (SpellingChecker, spelling_checker, G_TYPE_OBJECT)
@@ -89,7 +89,7 @@ spelling_checker_finalize (GObject *object)
   SpellingChecker *self = (SpellingChecker *)object;
 
   g_clear_object (&self->provider);
-  g_clear_object (&self->language);
+  g_clear_object (&self->dictionary);
 
   G_OBJECT_CLASS (spelling_checker_parent_class)->finalize (object);
 }
@@ -200,7 +200,7 @@ spelling_checker_get_language (SpellingChecker *self)
 {
   g_return_val_if_fail (SPELLING_IS_CHECKER (self), NULL);
 
-  return self->language ? spelling_language_get_code (self->language) : NULL;
+  return self->dictionary ? spelling_dictionary_get_code (self->dictionary) : NULL;
 }
 
 /**
@@ -219,7 +219,8 @@ spelling_checker_set_language (SpellingChecker *self,
 
   if (g_strcmp0 (language, spelling_checker_get_language (self)) != 0)
     {
-      self->language = spelling_provider_get_language (self->provider, language);
+      g_clear_object (&self->dictionary);
+      self->dictionary = spelling_provider_load_dictionary (self->provider, language);
       g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_LANGUAGE]);
     }
 }
@@ -266,7 +267,7 @@ spelling_checker_check_word (SpellingChecker *self,
   if (word == NULL || word_len == 0)
     return FALSE;
 
-  if (self->language == NULL)
+  if (self->dictionary == NULL)
     return TRUE;
 
   if (word_len < 0)
@@ -275,7 +276,7 @@ spelling_checker_check_word (SpellingChecker *self,
   if (word_is_number (word, word_len))
     return TRUE;
 
-  return spelling_language_contains_word (self->language, word, word_len);
+  return spelling_dictionary_contains_word (self->dictionary, word, word_len);
 }
 
 /**
@@ -295,10 +296,10 @@ spelling_checker_list_corrections (SpellingChecker *self,
   g_return_val_if_fail (SPELLING_IS_CHECKER (self), NULL);
   g_return_val_if_fail (word != NULL, NULL);
 
-  if (self->language == NULL)
+  if (self->dictionary == NULL)
     return NULL;
 
-  return spelling_language_list_corrections (self->language, word, -1);
+  return spelling_dictionary_list_corrections (self->dictionary, word, -1);
 }
 
 void
@@ -308,8 +309,8 @@ spelling_checker_add_word (SpellingChecker *self,
   g_return_if_fail (SPELLING_IS_CHECKER (self));
   g_return_if_fail (word != NULL);
 
-  if (self->language != NULL)
-    spelling_language_add_word (self->language, word);
+  if (self->dictionary != NULL)
+    spelling_dictionary_add_word (self->dictionary, word);
 }
 
 void
@@ -319,8 +320,8 @@ spelling_checker_ignore_word (SpellingChecker *self,
   g_return_if_fail (SPELLING_IS_CHECKER (self));
   g_return_if_fail (word != NULL);
 
-  if (self->language != NULL)
-    spelling_language_ignore_word (self->language, word);
+  if (self->dictionary != NULL)
+    spelling_dictionary_ignore_word (self->dictionary, word);
 }
 
 const char *
@@ -328,8 +329,8 @@ spelling_checker_get_extra_word_chars (SpellingChecker *self)
 {
   g_return_val_if_fail (SPELLING_IS_CHECKER (self), NULL);
 
-  if (self->language != NULL)
-    return spelling_language_get_extra_word_chars (self->language);
+  if (self->dictionary != NULL)
+    return spelling_dictionary_get_extra_word_chars (self->dictionary);
 
   return "";
 }

@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include "spelling-empty-provider-private.h"
+#include "spelling-language.h"
 
 struct _SpellingEmptyProvider
 {
@@ -35,15 +36,15 @@ spelling_empty_provider_new (void)
   return g_object_new (SPELLING_TYPE_EMPTY_PROVIDER, NULL);
 }
 
-static GPtrArray *
+static GListModel *
 empty_list_languages (SpellingProvider *provider)
 {
-  return g_ptr_array_new_with_free_func (g_object_unref);
+  return G_LIST_MODEL (g_list_store_new (SPELLING_TYPE_LANGUAGE));
 }
 
-static SpellingLanguage *
-empty_get_language (SpellingProvider *provider,
-                    const char       *language)
+static SpellingDictionary *
+empty_load_dictionary (SpellingProvider *provider,
+                       const char       *language)
 {
   return NULL;
 }
@@ -61,7 +62,7 @@ spelling_empty_provider_class_init (SpellingEmptyProviderClass *klass)
   SpellingProviderClass *provider_class = SPELLING_PROVIDER_CLASS (klass);
 
   provider_class->list_languages = empty_list_languages;
-  provider_class->get_language = empty_get_language;
+  provider_class->load_dictionary = empty_load_dictionary;
   provider_class->supports_language = empty_supports_language;
 }
 

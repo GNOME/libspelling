@@ -26,9 +26,11 @@
 #include <locale.h>
 #include <unicode/uloc.h>
 
-#include "spelling-language-info-private.h"
+#include <gio/gio.h>
 
-#include "spelling-enchant-language.h"
+#include "spelling-language-private.h"
+
+#include "spelling-enchant-dictionary.h"
 #include "spelling-enchant-provider.h"
 
 struct _SpellingEnchantProvider
@@ -38,7 +40,7 @@ struct _SpellingEnchantProvider
 
 G_DEFINE_FINAL_TYPE (SpellingEnchantProvider, spelling_enchant_provider, SPELLING_TYPE_PROVIDER)
 
-static GHashTable *languages;
+static GHashTable *dictionaries;
 
 static EnchantBroker *
 get_broker (void)
@@ -142,47 +144,51 @@ list_languages_cb (const char * const lang_tag,
                    const char * const provider_file,
                    gpointer           user_data)
 {
-  GPtrArray *ar = user_data;
+  GListStore *store = user_data;
   char *name = get_display_name (lang_tag);
   char *group = get_display_language (lang_tag);
 
   if (name != NULL)
-    g_ptr_array_add (ar, spelling_language_info_new (name, lang_tag, group));
+    {
+      g_autoptr(SpellingLanguage) language = spelling_language_new (name, lang_tag, group);
+
+      g_list_store_append (store, language);
+    }
 
   g_free (name);
   g_free (group);
 }
 
-static GPtrArray *
+static GListModel *
 spelling_enchant_provider_list_languages (SpellingProvider *provider)
 {
   EnchantBroker *broker = get_broker ();
-  GPtrArray *ar = g_ptr_array_new_with_free_func (g_object_unref);
-  enchant_broker_list_dicts (broker, list_languages_cb, ar);
-  return ar;
+  GListStore *store = g_list_store_new (SPELLING_TYPE_LANGUAGE);
+  enchant_broker_list_dicts (broker, list_languages_cb, store);
+  return G_LIST_MODEL (store);
 }
 
-static SpellingLanguage *
-spelling_enchant_provider_get_language (SpellingProvider *provider,
-                                        const char       *language)
+static SpellingDictionary *
+spelling_enchant_provider_load_dictionary (SpellingProvider *provider,
+                                           const char       *language)
 {
-  SpellingLanguage *ret;
+  SpellingDictionary *ret;
 
   g_assert (SPELLING_IS_ENCHANT_PROVIDER (provider));
   g_assert (language != NULL);
 
-  if (languages == NULL)
-    languages = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_object_unref);
+  if (dictionaries == NULL)
+    dictionaries = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_object_unref);
 
-  if (!(ret = g_hash_table_lookup (languages, language)))
+  if (!(ret = g_hash_table_lookup (dictionaries, language)))
     {
       EnchantDict *dict = enchant_broker_request_dict (get_broker (), language);
 
       if (dict == NULL)
         return NULL;
 
-      ret = spelling_enchant_language_new (language, dict);
-      g_hash_table_insert (languages, (char *)g_intern_string (language), ret);
+      ret = spelling_enchant_dictionary_new (language, dict);
+      g_hash_table_insert (dictionaries, (char *)g_intern_string (language), ret);
     }
 
   return ret ? g_object_ref (ret) : NULL;
@@ -195,7 +201,7 @@ spelling_enchant_provider_class_init (SpellingEnchantProviderClass *klass)
 
   spell_provider_class->supports_language = spelling_enchant_provider_supports_language;
   spell_provider_class->list_languages = spelling_enchant_provider_list_languages;
-  spell_provider_class->get_language = spelling_enchant_provider_get_language;
+  spell_provider_class->load_dictionary= spelling_enchant_provider_load_dictionary;
 }
 
 static void

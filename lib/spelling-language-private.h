@@ -1,5 +1,5 @@
 /*
- * spelling-language-info-private.h
+ * spelling-language-private.h
  *
  * Copyright 2023 Christian Hergert <chergert@redhat.com>
  *
@@ -21,12 +21,12 @@
 
 #pragma once
 
-#include "spelling-language-info.h"
+#include "spelling-language.h"
 
 G_BEGIN_DECLS
 
-SpellingLanguageInfo *spelling_language_info_new (const char *name,
-                                                  const char *code,
-                                                  const char *group);
+SpellingLanguage *spelling_language_new (const char *name,
+                                         const char *code,
+                                         const char *group);
 
 G_END_DECLS

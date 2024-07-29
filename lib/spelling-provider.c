@@ -21,6 +21,7 @@
 
 #include "config.h"
 
+#include "spelling-dictionary.h"
 #include "spelling-empty-provider-private.h"
 #include "spelling-provider-internal.h"
 
@@ -168,37 +169,48 @@ spelling_provider_supports_language (SpellingProvider *self,
  * spelling_provider_list_languages:
  * @self: an #SpellingProvider
  *
- * Gets a list of the languages supported by the provider.
+ * Gets a #GListModel of languages supported by the provider.
  *
- * Returns: (transfer container) (element-type SpellingLanguageInfo): an array of
- *   #SpellingLanguageInfo.
+ * Returns: (transfer full): a #GListModel of #SpellingLanguage
  */
-GPtrArray *
+GListModel *
 spelling_provider_list_languages (SpellingProvider *self)
 {
+  GListModel *ret;
+
   g_return_val_if_fail (SPELLING_IS_PROVIDER (self), NULL);
 
-  return SPELLING_PROVIDER_GET_CLASS (self)->list_languages (self);
+  ret = SPELLING_PROVIDER_GET_CLASS (self)->list_languages (self);
+
+  g_return_val_if_fail (!ret || G_IS_LIST_MODEL (ret), NULL);
+
+  return ret;
 }
 
 /**
- * spelling_provider_get_language:
+ * spelling_provider_load_dictionary:
  * @self: an #SpellingProvider
  * @language: the language to load such as `en_US`.
  *
- * Gets an #SpellingLanguage for the requested language, or %NULL
+ * Gets a #SpellingDictionary for the requested language, or %NULL
  * if the language is not supported.
  *
- * Returns: (transfer full) (nullable): an #SpellingProvider or %NULL
+ * Returns: (transfer full) (nullable): an #SpellingDictionary or %NULL
  */
-SpellingLanguage *
-spelling_provider_get_language (SpellingProvider *self,
-                                const char       *language)
+SpellingDictionary *
+spelling_provider_load_dictionary (SpellingProvider *self,
+                                   const char       *language)
 {
+  SpellingDictionary *ret;
+
   g_return_val_if_fail (SPELLING_IS_PROVIDER (self), NULL);
   g_return_val_if_fail (language != NULL, NULL);
 
-  return SPELLING_PROVIDER_GET_CLASS (self)->get_language (self, language);
+  ret = SPELLING_PROVIDER_GET_CLASS (self)->load_dictionary (self, language);
+
+  g_return_val_if_fail (!ret || SPELLING_IS_DICTIONARY (ret), NULL);
+
+  return ret;
 }
 
 const char *

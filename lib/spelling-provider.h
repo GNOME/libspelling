@@ -25,7 +25,7 @@
 # error "Only <libspelling.h> can be included directly."
 #endif
 
-#include <glib-object.h>
+#include <gio/gio.h>
 
 #include "spelling-types.h"
 #include "spelling-version-macros.h"
@@ -41,21 +41,21 @@ typedef struct _SpellingProvider SpellingProvider;
 typedef struct _SpellingProviderClass SpellingProviderClass;
 
 SPELLING_AVAILABLE_IN_ALL
-GType             spelling_provider_get_type          (void) G_GNUC_CONST;
+GType               spelling_provider_get_type          (void) G_GNUC_CONST;
 SPELLING_AVAILABLE_IN_ALL
-SpellingProvider *spelling_provider_get_default       (void);
+SpellingProvider   *spelling_provider_get_default       (void);
 SPELLING_AVAILABLE_IN_ALL
-const char       *spelling_provider_get_default_code  (SpellingProvider *self);
+const char         *spelling_provider_get_default_code  (SpellingProvider *self);
 SPELLING_AVAILABLE_IN_ALL
-const char       *spelling_provider_get_display_name  (SpellingProvider *self);
+const char         *spelling_provider_get_display_name  (SpellingProvider *self);
 SPELLING_AVAILABLE_IN_ALL
-gboolean          spelling_provider_supports_language (SpellingProvider *self,
-                                                       const char       *language);
+gboolean            spelling_provider_supports_language (SpellingProvider *self,
+                                                         const char       *language);
 SPELLING_AVAILABLE_IN_ALL
-GPtrArray        *spelling_provider_list_languages    (SpellingProvider *self);
+GListModel         *spelling_provider_list_languages    (SpellingProvider *self);
 SPELLING_AVAILABLE_IN_ALL
-SpellingLanguage *spelling_provider_get_language      (SpellingProvider *self,
-                                                       const char       *language);
+SpellingDictionary *spelling_provider_load_dictionary   (SpellingProvider *self,
+                                                         const char       *language);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (SpellingProvider, g_object_unref)
 
