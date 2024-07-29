@@ -1,4 +1,4 @@
-/* spelling-enchant-language.c
+/* spelling-enchant-dictionary.c
  *
  * Copyright 2021-2023 Christian Hergert <chergert@redhat.com>
  *
@@ -23,17 +23,17 @@
 #include <pango/pango.h>
 #include <enchant.h>
 
-#include "spelling-enchant-language.h"
+#include "spelling-enchant-dictionary.h"
 
-struct _SpellingEnchantLanguage
+struct _SpellingEnchantDictionary
 {
-  SpellingLanguage parent_instance;
+  SpellingDictionary parent_instance;
   PangoLanguage *language;
   EnchantDict *native;
   char *extra_word_chars;
 };
 
-G_DEFINE_FINAL_TYPE (SpellingEnchantLanguage, spelling_enchant_language, SPELLING_TYPE_LANGUAGE)
+G_DEFINE_FINAL_TYPE (SpellingEnchantDictionary, spelling_enchant_dictionary, SPELLING_TYPE_DICTIONARY)
 
 enum {
   PROP_0,
@@ -44,30 +44,30 @@ enum {
 static GParamSpec *properties [N_PROPS];
 
 /**
- * spelling_enchant_language_new:
+ * spelling_enchant_dictionary_new:
  *
- * Create a new #SpellingEnchantLanguage.
+ * Create a new #SpellingEnchantDictionary.
  *
- * Returns: (transfer full): a newly created #SpellingEnchantLanguage
+ * Returns: (transfer full): a newly created #SpellingEnchantDictionary
  */
-SpellingLanguage *
-spelling_enchant_language_new (const char *code,
+SpellingDictionary *
+spelling_enchant_dictionary_new (const char *code,
                                gpointer    native)
 {
-  return g_object_new (SPELLING_TYPE_ENCHANT_LANGUAGE,
+  return g_object_new (SPELLING_TYPE_ENCHANT_DICTIONARY,
                        "code", code,
                        "native", native,
                        NULL);
 }
 
 static gboolean
-spelling_enchant_language_contains_word (SpellingLanguage *language,
-                                         const char       *word,
-                                         gssize            word_len)
+spelling_enchant_dictionary_contains_word (SpellingDictionary *dictionary,
+                                           const char         *word,
+                                           gssize              word_len)
 {
-  SpellingEnchantLanguage *self = (SpellingEnchantLanguage *)language;
+  SpellingEnchantDictionary *self = (SpellingEnchantDictionary *)dictionary;
 
-  g_assert (SPELLING_IS_ENCHANT_LANGUAGE (self));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
   g_assert (word != NULL);
   g_assert (word_len > 0);
 
@@ -75,16 +75,16 @@ spelling_enchant_language_contains_word (SpellingLanguage *language,
 }
 
 static char **
-spelling_enchant_language_list_corrections (SpellingLanguage *language,
-                                            const char       *word,
-                                            gssize            word_len)
+spelling_enchant_dictionary_list_corrections (SpellingDictionary *dictionary,
+                                              const char         *word,
+                                              gssize              word_len)
 {
-  SpellingEnchantLanguage *self = (SpellingEnchantLanguage *)language;
+  SpellingEnchantDictionary *self = (SpellingEnchantDictionary *)dictionary;
   size_t count = 0;
   char **tmp;
   char **ret = NULL;
 
-  g_assert (SPELLING_IS_ENCHANT_LANGUAGE (self));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
   g_assert (word != NULL);
   g_assert (word_len > 0);
 
@@ -98,14 +98,14 @@ spelling_enchant_language_list_corrections (SpellingLanguage *language,
 }
 
 static char **
-spelling_enchant_language_split (SpellingEnchantLanguage *self,
-                                 const char              *words)
+spelling_enchant_dictionary_split (SpellingEnchantDictionary *self,
+                                   const char                *words)
 {
   PangoLogAttr *attrs;
   GArray *ar;
   gsize n_chars;
 
-  g_assert (SPELLING_IS_ENCHANT_LANGUAGE (self));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
 
   if (words == NULL || self->language == NULL)
     return NULL;
@@ -140,10 +140,10 @@ spelling_enchant_language_split (SpellingEnchantLanguage *self,
 }
 
 static void
-spelling_enchant_language_add_all_to_session (SpellingEnchantLanguage *self,
-                                              const char * const      *words)
+spelling_enchant_dictionary_add_all_to_session (SpellingEnchantDictionary *self,
+                                                const char * const        *words)
 {
-  g_assert (SPELLING_IS_ENCHANT_LANGUAGE (self));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
 
   if (words == NULL || words[0] == NULL)
     return;
@@ -153,56 +153,56 @@ spelling_enchant_language_add_all_to_session (SpellingEnchantLanguage *self,
 }
 
 static void
-spelling_enchant_language_add_word (SpellingLanguage *language,
-                                    const char       *word)
+spelling_enchant_dictionary_add_word (SpellingDictionary *dictionary,
+                                      const char         *word)
 {
-  SpellingEnchantLanguage *self = (SpellingEnchantLanguage *)language;
+  SpellingEnchantDictionary *self = (SpellingEnchantDictionary *)dictionary;
 
-  g_assert (SPELLING_IS_LANGUAGE (language));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
   g_assert (word != NULL);
 
   enchant_dict_add (self->native, word, -1);
 }
 
 static void
-spelling_enchant_language_ignore_word (SpellingLanguage *language,
-                                       const char       *word)
+spelling_enchant_dictionary_ignore_word (SpellingDictionary *dictionary,
+                                         const char         *word)
 {
-  SpellingEnchantLanguage *self = (SpellingEnchantLanguage *)language;
+  SpellingEnchantDictionary *self = (SpellingEnchantDictionary *)dictionary;
 
-  g_assert (SPELLING_IS_LANGUAGE (language));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
   g_assert (word != NULL);
 
   enchant_dict_add_to_session (self->native, word, -1);
 }
 
 static const char *
-spelling_enchant_language_get_extra_word_chars (SpellingLanguage *language)
+spelling_enchant_dictionary_get_extra_word_chars (SpellingDictionary *dictionary)
 {
-  SpellingEnchantLanguage *self = (SpellingEnchantLanguage *)language;
+  SpellingEnchantDictionary *self = (SpellingEnchantDictionary *)dictionary;
 
-  g_assert (SPELLING_IS_LANGUAGE (language));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
 
   return self->extra_word_chars;
 }
 
 static void
-spelling_enchant_language_constructed (GObject *object)
+spelling_enchant_dictionary_constructed (GObject *object)
 {
-  SpellingEnchantLanguage *self = (SpellingEnchantLanguage *)object;
+  SpellingEnchantDictionary *self = (SpellingEnchantDictionary *)object;
   g_auto(GStrv) split = NULL;
   const char *extra_word_chars;
   const char *code;
 
-  g_assert (SPELLING_IS_ENCHANT_LANGUAGE (self));
+  g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
 
-  G_OBJECT_CLASS (spelling_enchant_language_parent_class)->constructed (object);
+  G_OBJECT_CLASS (spelling_enchant_dictionary_parent_class)->constructed (object);
 
-  code = spelling_language_get_code (SPELLING_LANGUAGE (self));
+  code = spelling_dictionary_get_code (SPELLING_DICTIONARY (self));
   self->language = pango_language_from_string (code);
 
-  if ((split = spelling_enchant_language_split (self, g_get_real_name ())))
-    spelling_enchant_language_add_all_to_session (self, (const char * const *)split);
+  if ((split = spelling_enchant_dictionary_split (self, g_get_real_name ())))
+    spelling_enchant_dictionary_add_all_to_session (self, (const char * const *)split);
 
   if ((extra_word_chars = enchant_dict_get_extra_word_characters (self->native)))
     {
@@ -219,23 +219,23 @@ spelling_enchant_language_constructed (GObject *object)
 }
 
 static void
-spelling_enchant_language_finalize (GObject *object)
+spelling_enchant_dictionary_finalize (GObject *object)
 {
-  SpellingEnchantLanguage *self = (SpellingEnchantLanguage *)object;
+  SpellingEnchantDictionary *self = (SpellingEnchantDictionary *)object;
 
   /* Owned by provider */
   self->native = NULL;
 
-  G_OBJECT_CLASS (spelling_enchant_language_parent_class)->finalize (object);
+  G_OBJECT_CLASS (spelling_enchant_dictionary_parent_class)->finalize (object);
 }
 
 static void
-spelling_enchant_language_get_property (GObject    *object,
+spelling_enchant_dictionary_get_property (GObject    *object,
                                         guint       prop_id,
                                         GValue     *value,
                                         GParamSpec *pspec)
 {
-  SpellingEnchantLanguage *self = SPELLING_ENCHANT_LANGUAGE (object);
+  SpellingEnchantDictionary *self = SPELLING_ENCHANT_DICTIONARY (object);
 
   switch (prop_id)
     {
@@ -249,12 +249,12 @@ spelling_enchant_language_get_property (GObject    *object,
 }
 
 static void
-spelling_enchant_language_set_property (GObject      *object,
+spelling_enchant_dictionary_set_property (GObject      *object,
                                         guint         prop_id,
                                         const GValue *value,
                                         GParamSpec   *pspec)
 {
-  SpellingEnchantLanguage *self = SPELLING_ENCHANT_LANGUAGE (object);
+  SpellingEnchantDictionary *self = SPELLING_ENCHANT_DICTIONARY (object);
 
   switch (prop_id)
     {
@@ -268,21 +268,21 @@ spelling_enchant_language_set_property (GObject      *object,
 }
 
 static void
-spelling_enchant_language_class_init (SpellingEnchantLanguageClass *klass)
+spelling_enchant_dictionary_class_init (SpellingEnchantDictionaryClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
-  SpellingLanguageClass *spell_language_class = SPELLING_LANGUAGE_CLASS (klass);
+  SpellingDictionaryClass *dictionary_class = SPELLING_DICTIONARY_CLASS (klass);
 
-  object_class->constructed = spelling_enchant_language_constructed;
-  object_class->finalize = spelling_enchant_language_finalize;
-  object_class->get_property = spelling_enchant_language_get_property;
-  object_class->set_property = spelling_enchant_language_set_property;
+  object_class->constructed = spelling_enchant_dictionary_constructed;
+  object_class->finalize = spelling_enchant_dictionary_finalize;
+  object_class->get_property = spelling_enchant_dictionary_get_property;
+  object_class->set_property = spelling_enchant_dictionary_set_property;
 
-  spell_language_class->contains_word = spelling_enchant_language_contains_word;
-  spell_language_class->list_corrections = spelling_enchant_language_list_corrections;
-  spell_language_class->add_word = spelling_enchant_language_add_word;
-  spell_language_class->ignore_word = spelling_enchant_language_ignore_word;
-  spell_language_class->get_extra_word_chars = spelling_enchant_language_get_extra_word_chars;
+  dictionary_class->contains_word = spelling_enchant_dictionary_contains_word;
+  dictionary_class->list_corrections = spelling_enchant_dictionary_list_corrections;
+  dictionary_class->add_word = spelling_enchant_dictionary_add_word;
+  dictionary_class->ignore_word = spelling_enchant_dictionary_ignore_word;
+  dictionary_class->get_extra_word_chars = spelling_enchant_dictionary_get_extra_word_chars;
 
   properties[PROP_NATIVE] =
     g_param_spec_pointer ("native",
@@ -294,14 +294,15 @@ spelling_enchant_language_class_init (SpellingEnchantLanguageClass *klass)
 }
 
 static void
-spelling_enchant_language_init (SpellingEnchantLanguage *self)
+spelling_enchant_dictionary_init (SpellingEnchantDictionary *self)
 {
 }
 
 gpointer
-spelling_enchant_language_get_native (SpellingEnchantLanguage *self)
+spelling_enchant_dictionary_get_native (SpellingEnchantDictionary *self)
 {
-  g_return_val_if_fail (SPELLING_IS_ENCHANT_LANGUAGE (self), NULL);
+  g_return_val_if_fail (SPELLING_IS_ENCHANT_DICTIONARY (self), NULL);
 
   return self->native;
 }
+

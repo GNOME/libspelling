@@ -1,4 +1,4 @@
-/* spelling-enchant-language.h
+/* spelling-enchant-dictionary.h
  *
  * Copyright 2021-2023 Christian Hergert <chergert@redhat.com>
  *
@@ -20,16 +20,17 @@
 
 #pragma once
 
-#include "spelling-language-internal.h"
+#include "spelling-dictionary-internal.h"
 
 G_BEGIN_DECLS
 
-#define SPELLING_TYPE_ENCHANT_LANGUAGE (spelling_enchant_language_get_type())
+#define SPELLING_TYPE_ENCHANT_DICTIONARY (spelling_enchant_dictionary_get_type())
 
-G_DECLARE_FINAL_TYPE (SpellingEnchantLanguage, spelling_enchant_language, SPELLING, ENCHANT_LANGUAGE, SpellingLanguage)
+G_DECLARE_FINAL_TYPE (SpellingEnchantDictionary, spelling_enchant_dictionary, SPELLING, ENCHANT_DICTIONARY, SpellingDictionary)
 
-SpellingLanguage *spelling_enchant_language_new        (const char              *code,
-                                                        gpointer                 native);
-gpointer          spelling_enchant_language_get_native (SpellingEnchantLanguage *self);
+SpellingDictionary *spelling_enchant_dictionary_new        (const char                *code,
+                                                            gpointer                   native);
+gpointer            spelling_enchant_dictionary_get_native (SpellingEnchantDictionary *self);
 
 G_END_DECLS
+

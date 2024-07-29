@@ -26,7 +26,7 @@
 G_BEGIN_DECLS
 
 typedef struct _SpellingChecker      SpellingChecker;
-typedef struct _SpellingLanguage     SpellingLanguage;
+typedef struct _SpellingDictionary   SpellingDictionary;
 typedef struct _SpellingLanguageInfo SpellingLanguageInfo;
 typedef struct _SpellingProvider     SpellingProvider;
 
