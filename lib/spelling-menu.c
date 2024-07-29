@@ -170,16 +170,19 @@ spelling_corrections_new (void)
 }
 
 static int
-count_groups (GPtrArray *infos)
+count_groups (GListModel *model)
 {
   g_autoptr(GHashTable) groups = g_hash_table_new (g_str_hash, g_str_equal);
+  guint n_items;
 
-  g_assert (infos != NULL);
+  g_assert (G_IS_LIST_MODEL (model));
 
-  for (guint i = 0; i < infos->len; i++)
+  n_items = g_list_model_get_n_items (model);
+
+  for (guint i = 0; i < n_items; i++)
     {
-      SpellingLanguageInfo *info = g_ptr_array_index (infos, i);
-      const char *group = spelling_language_info_get_group (info);
+      g_autoptr(SpellingLanguageInfo) language = g_list_model_get_item (model, i);
+      const char *group = spelling_language_info_get_group (language);
 
       if (group != NULL && group[0] != 0 && !g_hash_table_contains (groups, group))
         g_hash_table_insert (groups, (char *)group, NULL);
@@ -192,24 +195,26 @@ static void
 populate_languages (GMenu *menu)
 {
   SpellingProvider *provider = spelling_provider_get_default ();
-  g_autoptr(GPtrArray) infos = spelling_provider_list_languages (provider);
+  g_autoptr(GListModel) languages = spelling_provider_list_languages (provider);
   g_autoptr(GHashTable) groups = NULL;
+  guint n_items;
 
-  if (infos == NULL)
+  if (languages == NULL)
     return;
 
   groups = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+  n_items = g_list_model_get_n_items (languages);
 
   /* First setup our groups. We do that up front so we can avoid
    * checking below, but also so we can hoist a single group up
    * into the parent menu if necessary.
    */
-  if (count_groups (infos) > 1)
+  if (count_groups (languages) > 1)
     {
-      for (guint i = 0; i < infos->len; i++)
+      for (guint i = 0; i < n_items; i++)
         {
-          SpellingLanguageInfo *info = g_ptr_array_index (infos, i);
-          const char *group = spelling_language_info_get_group (info);
+          g_autoptr(SpellingLanguageInfo) language = g_list_model_get_item (languages, i);
+          const char *group = spelling_language_info_get_group (language);
           GMenu *group_menu;
 
           if (group == NULL || group[0] == 0)
@@ -226,12 +231,12 @@ populate_languages (GMenu *menu)
         }
     }
 
-  for (guint i = 0; i < infos->len; i++)
+  for (guint i = 0; i < n_items; i++)
     {
-      SpellingLanguageInfo *info = g_ptr_array_index (infos, i);
-      const char *name = spelling_language_info_get_name (info);
-      const char *group = spelling_language_info_get_group (info);
-      const char *code = spelling_language_info_get_code (info);
+      g_autoptr(SpellingLanguageInfo) language = g_list_model_get_item (languages, i);
+      const char *name = spelling_language_info_get_name (language);
+      const char *group = spelling_language_info_get_group (language);
+      const char *code = spelling_language_info_get_code (language);
       g_autoptr(GMenuItem) item = NULL;
       GMenu *group_menu;
 

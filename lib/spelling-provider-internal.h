@@ -37,7 +37,7 @@ struct _SpellingProviderClass
 {
   GObjectClass parent_class;
 
-  GPtrArray          *(*list_languages)    (SpellingProvider *self);
+  GListModel         *(*list_languages)    (SpellingProvider *self);
   gboolean            (*supports_language) (SpellingProvider *self,
                                             const char       *language);
   SpellingDictionary *(*load_dictionary)   (SpellingProvider *self,

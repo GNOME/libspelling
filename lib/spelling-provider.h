@@ -25,7 +25,7 @@
 # error "Only <libspelling.h> can be included directly."
 #endif
 
-#include <glib-object.h>
+#include <gio/gio.h>
 
 #include "spelling-types.h"
 #include "spelling-version-macros.h"
@@ -52,7 +52,7 @@ SPELLING_AVAILABLE_IN_ALL
 gboolean            spelling_provider_supports_language (SpellingProvider *self,
                                                          const char       *language);
 SPELLING_AVAILABLE_IN_ALL
-GPtrArray          *spelling_provider_list_languages    (SpellingProvider *self);
+GListModel         *spelling_provider_list_languages    (SpellingProvider *self);
 SPELLING_AVAILABLE_IN_ALL
 SpellingDictionary *spelling_provider_load_dictionary   (SpellingProvider *self,
                                                          const char       *language);

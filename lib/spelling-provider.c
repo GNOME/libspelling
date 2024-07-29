@@ -169,17 +169,22 @@ spelling_provider_supports_language (SpellingProvider *self,
  * spelling_provider_list_languages:
  * @self: an #SpellingProvider
  *
- * Gets a list of the languages supported by the provider.
+ * Gets a #GListModel of languages supported by the provider.
  *
- * Returns: (transfer container) (element-type SpellingLanguageInfo): an array of
- *   #SpellingLanguageInfo.
+ * Returns: (transfer full): a #GListModel of #SpellingLanguage
  */
-GPtrArray *
+GListModel *
 spelling_provider_list_languages (SpellingProvider *self)
 {
+  GListModel *ret;
+
   g_return_val_if_fail (SPELLING_IS_PROVIDER (self), NULL);
 
-  return SPELLING_PROVIDER_GET_CLASS (self)->list_languages (self);
+  ret = SPELLING_PROVIDER_GET_CLASS (self)->list_languages (self);
+
+  g_return_val_if_fail (!ret || G_IS_LIST_MODEL (ret), NULL);
+
+  return ret;
 }
 
 /**

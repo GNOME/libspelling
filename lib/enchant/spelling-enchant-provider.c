@@ -26,6 +26,8 @@
 #include <locale.h>
 #include <unicode/uloc.h>
 
+#include <gio/gio.h>
+
 #include "spelling-language-info-private.h"
 
 #include "spelling-enchant-dictionary.h"
@@ -142,24 +144,28 @@ list_languages_cb (const char * const lang_tag,
                    const char * const provider_file,
                    gpointer           user_data)
 {
-  GPtrArray *ar = user_data;
+  GListStore *store = user_data;
   char *name = get_display_name (lang_tag);
   char *group = get_display_language (lang_tag);
 
   if (name != NULL)
-    g_ptr_array_add (ar, spelling_language_info_new (name, lang_tag, group));
+    {
+      g_autoptr(SpellingLanguageInfo) language = spelling_language_info_new (name, lang_tag, group);
+
+      g_list_store_append (store, language);
+    }
 
   g_free (name);
   g_free (group);
 }
 
-static GPtrArray *
+static GListModel *
 spelling_enchant_provider_list_languages (SpellingProvider *provider)
 {
   EnchantBroker *broker = get_broker ();
-  GPtrArray *ar = g_ptr_array_new_with_free_func (g_object_unref);
-  enchant_broker_list_dicts (broker, list_languages_cb, ar);
-  return ar;
+  GListStore *store = g_list_store_new (SPELLING_TYPE_LANGUAGE_INFO);
+  enchant_broker_list_dicts (broker, list_languages_cb, store);
+  return G_LIST_MODEL (store);
 }
 
 static SpellingDictionary *
