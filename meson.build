@@ -4,6 +4,10 @@ project('libspelling', 'c',
   default_options: [ 'warning_level=2', 'werror=false', 'c_std=gnu11', ],
 )
 
+libgtk_dep = dependency('gtk4', version: '>= 4.15.5')
+gtksource_dep = dependency('gtksourceview-5', version: '>= 5.10.0')
+libgio_dep = dependency('gio-2.0')
+
 cc = meson.get_compiler('c')
 
 prefix = get_option('prefix')
