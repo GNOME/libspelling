@@ -20,22 +20,35 @@
 
 #pragma once
 
+#include <gtk/gtk.h>
+
 #include "spelling-dictionary.h"
 
 G_BEGIN_DECLS
 
 #define SPELLING_DICTIONARY_GET_CLASS(obj) G_TYPE_INSTANCE_GET_CLASS(obj, SPELLING_TYPE_DICTIONARY, SpellingDictionaryClass)
 
+typedef struct _SpellingBoundary
+{
+  guint offset;
+  guint length;
+  guint byte_offset;
+  guint byte_length;
+} SpellingBoundary;
+
 struct _SpellingDictionary
 {
   GObject parent_instance;
   const char *code;
+  GMutex mutex;
 };
 
 struct _SpellingDictionaryClass
 {
   GObjectClass parent_class;
 
+  void         (*lock)                 (SpellingDictionary *self);
+  void         (*unlock)               (SpellingDictionary *self);
   gboolean     (*contains_word)        (SpellingDictionary *self,
                                         const char         *word,
                                         gssize              word_len);
@@ -48,5 +61,10 @@ struct _SpellingDictionaryClass
                                         const char         *word);
   const char  *(*get_extra_word_chars) (SpellingDictionary *self);
 };
+
+GtkBitset *_spelling_dictionary_check_words (SpellingDictionary     *self,
+                                             const char             *text,
+                                             const SpellingBoundary *positions,
+                                             guint                   n_positions);
 
 G_END_DECLS
