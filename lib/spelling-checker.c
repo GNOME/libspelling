@@ -23,7 +23,7 @@
 
 #include <string.h>
 
-#include "spelling-checker.h"
+#include "spelling-checker-private.h"
 #include "spelling-dictionary.h"
 #include "spelling-provider.h"
 
@@ -32,6 +32,7 @@ struct _SpellingChecker
   GObject             parent_instance;
   SpellingProvider   *provider;
   SpellingDictionary *dictionary;
+  PangoLanguage      *language;
 };
 
 G_DEFINE_FINAL_TYPE (SpellingChecker, spelling_checker, G_TYPE_OBJECT)
@@ -213,12 +214,13 @@ spelling_checker_get_language (SpellingChecker *self)
  */
 void
 spelling_checker_set_language (SpellingChecker *self,
-                               const char           *language)
+                               const char      *language)
 {
   g_return_if_fail (SPELLING_IS_CHECKER (self));
 
   if (g_strcmp0 (language, spelling_checker_get_language (self)) != 0)
     {
+      self->language = pango_language_from_string (language);
       g_clear_object (&self->dictionary);
       self->dictionary = spelling_provider_load_dictionary (self->provider, language);
       g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_LANGUAGE]);
@@ -242,21 +244,6 @@ spelling_checker_get_provider (SpellingChecker *self)
   return self->provider;
 }
 
-static inline gboolean
-word_is_number (const char *word,
-                gssize      word_len)
-{
-  g_assert (word_len > 0);
-
-  for (gssize i = 0; i < word_len; i++)
-    {
-      if (word[i] < '0' || word[i] > '9')
-        return FALSE;
-    }
-
-  return TRUE;
-}
-
 gboolean
 spelling_checker_check_word (SpellingChecker *self,
                              const char      *word,
@@ -272,9 +259,6 @@ spelling_checker_check_word (SpellingChecker *self,
 
   if (word_len < 0)
     word_len = strlen (word);
-
-  if (word_is_number (word, word_len))
-    return TRUE;
 
   return spelling_dictionary_contains_word (self->dictionary, word, word_len);
 }
@@ -357,4 +341,23 @@ spelling_checker_get_default (void)
     }
 
   return instance;
+}
+
+PangoLanguage *
+_spelling_checker_get_pango_language (SpellingChecker *self)
+{
+  g_return_val_if_fail (SPELLING_IS_CHECKER (self), NULL);
+
+  if (self->language == NULL)
+    return pango_language_get_default ();
+
+  return self->language;
+}
+
+SpellingDictionary *
+_spelling_checker_get_dictionary (SpellingChecker *self)
+{
+  g_return_val_if_fail (SPELLING_IS_CHECKER (self), NULL);
+
+  return self->dictionary;
 }
