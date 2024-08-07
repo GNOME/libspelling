@@ -34,30 +34,32 @@ SPELLING_AVAILABLE_IN_ALL
 G_DECLARE_FINAL_TYPE (SpellingTextBufferAdapter, spelling_text_buffer_adapter, SPELLING, TEXT_BUFFER_ADAPTER, GObject)
 
 SPELLING_AVAILABLE_IN_ALL
-SpellingTextBufferAdapter *spelling_text_buffer_adapter_new            (GtkSourceBuffer           *buffer,
-                                                                        SpellingChecker           *checker);
+SpellingTextBufferAdapter *spelling_text_buffer_adapter_new                (GtkSourceBuffer           *buffer,
+                                                                            SpellingChecker           *checker);
 SPELLING_AVAILABLE_IN_ALL
-GtkSourceBuffer           *spelling_text_buffer_adapter_get_buffer     (SpellingTextBufferAdapter *self);
+GtkSourceBuffer           *spelling_text_buffer_adapter_get_buffer         (SpellingTextBufferAdapter *self);
 SPELLING_AVAILABLE_IN_ALL
-gboolean                   spelling_text_buffer_adapter_get_enabled    (SpellingTextBufferAdapter *self);
+gboolean                   spelling_text_buffer_adapter_get_enabled        (SpellingTextBufferAdapter *self);
 SPELLING_AVAILABLE_IN_ALL
-void                       spelling_text_buffer_adapter_set_enabled    (SpellingTextBufferAdapter *self,
-                                                                        gboolean                   enabled);
+void                       spelling_text_buffer_adapter_set_enabled        (SpellingTextBufferAdapter *self,
+                                                                            gboolean                   enabled);
 SPELLING_AVAILABLE_IN_ALL
-SpellingChecker           *spelling_text_buffer_adapter_get_checker    (SpellingTextBufferAdapter *self);
+SpellingChecker           *spelling_text_buffer_adapter_get_checker        (SpellingTextBufferAdapter *self);
 SPELLING_AVAILABLE_IN_ALL
-void                       spelling_text_buffer_adapter_set_checker    (SpellingTextBufferAdapter *self,
-                                                                        SpellingChecker           *checker);
+void                       spelling_text_buffer_adapter_set_checker        (SpellingTextBufferAdapter *self,
+                                                                            SpellingChecker           *checker);
 SPELLING_AVAILABLE_IN_ALL
-const char                *spelling_text_buffer_adapter_get_language   (SpellingTextBufferAdapter *self);
+const char                *spelling_text_buffer_adapter_get_language       (SpellingTextBufferAdapter *self);
 SPELLING_AVAILABLE_IN_ALL
-void                       spelling_text_buffer_adapter_set_language   (SpellingTextBufferAdapter *self,
-                                                                        const char                *language);
+void                       spelling_text_buffer_adapter_set_language       (SpellingTextBufferAdapter *self,
+                                                                            const char                *language);
 SPELLING_AVAILABLE_IN_ALL
-void                       spelling_text_buffer_adapter_invalidate_all (SpellingTextBufferAdapter *self);
+void                       spelling_text_buffer_adapter_invalidate_all     (SpellingTextBufferAdapter *self);
 SPELLING_AVAILABLE_IN_ALL
-GtkTextTag                *spelling_text_buffer_adapter_get_tag        (SpellingTextBufferAdapter *self);
+GtkTextTag                *spelling_text_buffer_adapter_get_tag            (SpellingTextBufferAdapter *self);
 SPELLING_AVAILABLE_IN_ALL
-GMenuModel                *spelling_text_buffer_adapter_get_menu_model (SpellingTextBufferAdapter *self);
+GMenuModel                *spelling_text_buffer_adapter_get_menu_model     (SpellingTextBufferAdapter *self);
+SPELLING_AVAILABLE_IN_ALL
+void                       spelling_text_buffer_adapter_update_corrections (SpellingTextBufferAdapter *self);
 
 G_END_DECLS

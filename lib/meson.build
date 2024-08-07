@@ -4,6 +4,8 @@ libspelling_private_sources = [
   'cjhtextregion.c',
   'spelling-cursor.c',
   'spelling-empty-provider.c',
+  'spelling-engine.c',
+  'spelling-job.c',
   'spelling-menu.c',
 ]
 
