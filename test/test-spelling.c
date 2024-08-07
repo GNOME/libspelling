@@ -32,10 +32,14 @@ main (int   argc,
   GMenuModel *extra_menu;
   GtkWindow *window;
   GMainLoop *main_loop;
+  g_autofree char *contents = NULL;
 
   gtk_init ();
   gtk_source_init ();
   spelling_init ();
+
+  if (argc == 2)
+    g_file_get_contents (argv[1], &contents, NULL, NULL);
 
   main_loop = g_main_loop_new (NULL, FALSE);
   window = g_object_new (GTK_TYPE_WINDOW,
@@ -52,6 +56,7 @@ main (int   argc,
 #endif
                                 "style-scheme", gtk_source_style_scheme_manager_get_scheme (gtk_source_style_scheme_manager_get_default (), "Adwaita"),
                                 "enable-undo", TRUE,
+                                "text", contents ? contents : "",
                                 NULL);
   source_view = g_object_new (GTK_SOURCE_TYPE_VIEW,
                               "buffer", source_buffer,
