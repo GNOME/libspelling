@@ -13,6 +13,7 @@ libspelling_testsuite_c_args = [
 
 libspelling_testsuite = {
   'test-cursor' : {},
+  'test-region' : {},
 }
 
 libspelling_testsuite_deps = [
