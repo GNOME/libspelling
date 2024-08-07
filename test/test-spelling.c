@@ -18,6 +18,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include "config.h"
+
+#include <unistd.h>
+
 #include <libspelling.h>
 
 int
@@ -25,6 +29,10 @@ main (int   argc,
       char *argv[])
 {
   g_autoptr(SpellingTextBufferAdapter) adapter = NULL;
+  g_autoptr(GOptionContext) context = NULL;
+  g_autoptr(GError) error = NULL;
+  GtkSourceLanguage *language = NULL;
+  GtkSourceStyleScheme *scheme = NULL;
   SpellingChecker *checker = NULL;
   GtkScrolledWindow *scroller;
   GtkSourceBuffer *source_buffer;
@@ -33,10 +41,43 @@ main (int   argc,
   GtkWindow *window;
   GMainLoop *main_loop;
   g_autofree char *contents = NULL;
+  g_autofree char *language_id = NULL;
+  g_autofree char *scheme_id = NULL;
+
+  const GOptionEntry entries[] = {
+    { "language", 'l', 0, G_OPTION_ARG_STRING, &language_id, "The GtkSourceView language ID to use", "c" },
+    { "scheme", 's', 0, G_OPTION_ARG_STRING, &scheme_id, "The GtkSourceView style scheme ID to use", "Adwaita" },
+    { 0 }
+  };
 
   gtk_init ();
   gtk_source_init ();
   spelling_init ();
+
+  context = g_option_context_new ("- test spellcheck text-adapter");
+  g_option_context_add_main_entries (context, entries, GETTEXT_PACKAGE);
+
+  if (!g_option_context_parse (context, &argc, &argv, &error))
+    {
+      g_printerr ("%s\n", error->message);
+      return EXIT_FAILURE;
+    }
+
+  if (language_id != NULL)
+    {
+      language = gtk_source_language_manager_get_language (gtk_source_language_manager_get_default (), language_id);
+
+      if (language == NULL)
+        g_warning ("No such GtkSourceView programming language with id \"%s\"", language_id);
+    }
+
+  if (scheme_id == NULL)
+    scheme_id = g_strdup ("Adwaita");
+
+  scheme = gtk_source_style_scheme_manager_get_scheme (gtk_source_style_scheme_manager_get_default (), scheme_id);
+
+  if (scheme == NULL)
+    g_warning ("No such GtkSourceView style scheme with id \"%s\"", scheme_id);
 
   if (argc == 2)
     g_file_get_contents (argv[1], &contents, NULL, NULL);
@@ -51,10 +92,8 @@ main (int   argc,
                            "hscrollbar-policy", GTK_POLICY_NEVER,
                            NULL);
   source_buffer = g_object_new (GTK_SOURCE_TYPE_BUFFER,
-#if 0
-                                "language", gtk_source_language_manager_get_language (gtk_source_language_manager_get_default (), "c"),
-#endif
-                                "style-scheme", gtk_source_style_scheme_manager_get_scheme (gtk_source_style_scheme_manager_get_default (), "Adwaita"),
+                                "language", language,
+                                "style-scheme", scheme,
                                 "enable-undo", TRUE,
                                 "text", contents ? contents : "",
                                 NULL);
