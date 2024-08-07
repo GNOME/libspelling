@@ -25,8 +25,9 @@ libspelling_testsuite_deps = [
 foreach test, params: libspelling_testsuite
   test_exe = executable(test,
     ['@0@.c'.format(test)],
-          c_args: libspelling_testsuite_c_args,
-    dependencies: libspelling_testsuite_deps,
+                 c_args: libspelling_testsuite_c_args,
+           dependencies: libspelling_testsuite_deps,
+    include_directories: [include_directories('..'), include_directories('.')],
   )
   if not params.get('skip', false)
     test(test, test_exe, env: libspelling_test_env)
