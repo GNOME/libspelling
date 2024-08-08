@@ -1,3 +1,33 @@
+libspelling 0.3.0
+=================
+
+This is an unstable release for GNOME 47.beta.
+
+The highlight for this release is a new threaded spellchecking
+engine. It performs text analysis and dictionary lookups in
+bulk off the UI thread. Care is taken to catch collisions in the
+face of user editing while spellchecking operations are in flight.
+
+I expect a significant reduction in initial spellchecking time
+after opening a document. Opening `gtktextbuffer.c` in Text Editor
+was more than 8x faster.
+
+Currently, libspelling relies on GTK main until 4.15.5 is released
+so do keep this in mind if you are a distributor.
+
+Some API has changed, though that is unlikely to affect any known
+applications using libspelling.
+
+ * Many new unit tests are part of the testsuite
+ * SpellingLanguage was renamed to SpellingDictionary
+ * SpellingLanguageInfo was renamed to SpellingLanguage
+ * Various helpers were added to SpellingTextBufferAdapter so
+   that they can update spelling menus. Applications that update
+   the cursor position on clicks before showing menus may want to
+   force the menu updating before `menu.popup`.
+ * SpellingTextBufferAdapter now uses the new GtkTextBufferCommitNotify
+   API in GTK 4.15.5 and newer
+
 libspelling 0.2.1
 =================
 
