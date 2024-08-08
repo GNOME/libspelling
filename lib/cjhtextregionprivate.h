@@ -115,4 +115,45 @@ void           _cjh_text_region_foreach_in_range (CjhTextRegion            *regi
                                                   gpointer                  user_data);
 void           _cjh_text_region_free             (CjhTextRegion            *region);
 
+static inline gboolean
+_cjh_text_region_get_run_at_offset_cb (gsize                   offset,
+                                       const CjhTextRegionRun *run,
+                                       gpointer                user_data)
+{
+  struct {
+    const CjhTextRegionRun *run;
+    gsize real_offset;
+  } *state = user_data;
+
+  state->run = run;
+  state->real_offset = offset;
+
+  return TRUE;
+}
+
+static inline const CjhTextRegionRun *
+_cjh_text_region_get_run_at_offset (CjhTextRegion *region,
+                                    gsize          offset,
+                                    gsize         *real_offset)
+{
+  struct {
+    const CjhTextRegionRun *run;
+    gsize real_offset;
+  } state = { NULL, 0 };
+  gsize lo = offset;
+  gsize hi = MIN (offset + 1, _cjh_text_region_get_length (region));
+
+  if (offset == _cjh_text_region_get_length (region))
+    {
+      *real_offset = offset;
+      return NULL;
+    }
+
+  _cjh_text_region_foreach_in_range (region, lo, hi,
+                                     _cjh_text_region_get_run_at_offset_cb,
+                                     &state);
+  *real_offset = state.real_offset;
+  return state.run;
+}
+
 G_END_DECLS

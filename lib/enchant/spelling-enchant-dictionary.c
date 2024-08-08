@@ -60,6 +60,21 @@ spelling_enchant_dictionary_new (const char *code,
                        NULL);
 }
 
+static inline gboolean
+word_is_number (const char *word,
+                gsize       word_len)
+{
+  g_assert (word_len > 0);
+
+  for (gsize i = 0; i < word_len; i++)
+    {
+      if (word[i] < '0' || word[i] > '9')
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gboolean
 spelling_enchant_dictionary_contains_word (SpellingDictionary *dictionary,
                                            const char         *word,
@@ -70,6 +85,9 @@ spelling_enchant_dictionary_contains_word (SpellingDictionary *dictionary,
   g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
   g_assert (word != NULL);
   g_assert (word_len > 0);
+
+  if (word_is_number (word, word_len))
+    return TRUE;
 
   return enchant_dict_check (self->native, word, word_len) == 0;
 }

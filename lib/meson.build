@@ -4,6 +4,8 @@ libspelling_private_sources = [
   'cjhtextregion.c',
   'spelling-cursor.c',
   'spelling-empty-provider.c',
+  'spelling-engine.c',
+  'spelling-job.c',
   'spelling-menu.c',
 ]
 
@@ -29,9 +31,9 @@ libspelling_public_headers = [
 ]
 
 libspelling_deps = [
-  dependency('gio-2.0'),
-  dependency('gtk4', version: '>= 4.15.5'),
-  dependency('gtksourceview-5', version: '>= 5.6'),
+  libgio_dep,
+  libgtk_dep,
+  gtksource_dep,
 ]
 
 if get_option('enchant').enabled()
@@ -59,6 +61,7 @@ libspelling_static = static_library( 'spelling-' + api_version, libspelling_sour
            dependencies: libspelling_deps,
   gnu_symbol_visibility: 'hidden',
                  c_args: ['-DLIBSPELLING_COMPILATION'],
+    include_directories: [include_directories('..'), include_directories('.')],
 )
 
 libspelling_static_dep = declare_dependency(

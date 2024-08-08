@@ -12,9 +12,64 @@ reference:
     variables:
         MESON_FLAGS: "-Denchant=enabled -Dvapi=true"
     script:
-        - sudo dnf install -y gtk4-devel gtksourceview5-devel vala enchant2-devel
+        - sudo dnf install -y gtk4-devel
+                ccache
+                desktop-file-utils
+                editorconfig-devel
+                enchant2-devel
+                expat-devel
+                gcc
+                gcc-c++
+                gettext
+                git
+                glib2-devel
+                gobject-introspection-devel
+                gtk4-devel
+                gtksourceview5-devel
+                itstool
+                libadwaita-devel
+                libicu-devel
+                libjpeg-turbo-devel
+                libpng-devel
+                libxkbcommon-devel
+                libXrandr-devel
+                libXi-devel
+                libXcursor-devel
+                libXdamage-devel
+                libXinerama-devel
+                libdrm-devel
+                libglvnd-devel
+                glslc
+                meson
+                ninja-build
+                redhat-rpm-config
+                shared-mime-info
+                vala
+                xorg-x11-server-Xvfb
+                vulkan-devel
         - mkdir -p pfx/
         - meson ${MESON_FLAGS} --prefix=${PWD}/pfx _build
+                -Dwerror=false
+                -Dglib:werror=false
+                -Dgtk:broadway-backend=false
+                -Dgtk:build-examples=false
+                -Dgtk:build-tests=false
+                -Dgtk:build-testsuite=false
+                -Dgtk:build-demos=false
+                -Dgtk:media-gstreamer=disabled
+                -Dgtk:werror=false
+                -Dgtksourceview:documentation=false
+                -Dgtksourceview:introspection=disabled
+                -Dgtksourceview:vapi=false
+                -Dgtksourceview:werror=false
+                -Dicu:werror=false
+                -Dpango:gtk_doc=false
+                -Dpango:introspection=disabled
+                -Dpango:werror=false
+                -Dwayland-protocols:tests=false
+                -Dwayland:documentation=false
+                -Dwayland:dtd_validation=false
+                -Dwayland:tests=false
         - ninja -C _build install
         - mkdir -p _reference/
         - mv pfx/share/doc/libspelling-1/ _reference/

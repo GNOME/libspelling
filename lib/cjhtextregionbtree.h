@@ -18,8 +18,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef __CJH_TEXT_REGION_BTREE_H__
-#define __CJH_TEXT_REGION_BTREE_H__
+#pragma once
 
 #include "cjhtextregionprivate.h"
 
@@ -560,5 +559,3 @@ _cjh_text_region_get_first_leaf (CjhTextRegion *self)
 }
 
 G_END_DECLS
-
-#endif /* __CJH_TEXT_REGION_BTREE_H__ */

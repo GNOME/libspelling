@@ -35,6 +35,42 @@ enum {
 static GParamSpec *properties[N_PROPS];
 
 static void
+spelling_dictionary_real_lock (SpellingDictionary *self)
+{
+  g_mutex_lock (&self->mutex);
+}
+
+static void
+spelling_dictionary_real_unlock (SpellingDictionary *self)
+{
+  g_mutex_unlock (&self->mutex);
+}
+
+static inline void
+spelling_dictionary_lock (SpellingDictionary *self)
+{
+  SPELLING_DICTIONARY_GET_CLASS (self)->lock (self);
+}
+
+static inline void
+spelling_dictionary_unlock (SpellingDictionary *self)
+{
+  SPELLING_DICTIONARY_GET_CLASS (self)->unlock (self);
+}
+
+static void
+spelling_dictionary_finalize (GObject *object)
+{
+  SpellingDictionary *self = (SpellingDictionary *)object;
+
+  self->code = NULL;
+
+  g_mutex_clear (&self->mutex);
+
+  G_OBJECT_CLASS (spelling_dictionary_parent_class)->finalize (object);
+}
+
+static void
 spelling_dictionary_get_property (GObject    *object,
                                   guint       prop_id,
                                   GValue     *value,
@@ -77,8 +113,12 @@ spelling_dictionary_class_init (SpellingDictionaryClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
+  object_class->finalize = spelling_dictionary_finalize;
   object_class->get_property = spelling_dictionary_get_property;
   object_class->set_property = spelling_dictionary_set_property;
+
+  klass->lock = spelling_dictionary_real_lock;
+  klass->unlock = spelling_dictionary_real_unlock;
 
   properties[PROP_CODE] =
     g_param_spec_string ("code",
@@ -95,6 +135,7 @@ spelling_dictionary_class_init (SpellingDictionaryClass *klass)
 static void
 spelling_dictionary_init (SpellingDictionary *self)
 {
+  g_mutex_init (&self->mutex);
 }
 
 const char *
@@ -110,13 +151,19 @@ spelling_dictionary_contains_word (SpellingDictionary *self,
                                    const char         *word,
                                    gssize              word_len)
 {
+  gboolean ret;
+
   g_return_val_if_fail (SPELLING_IS_DICTIONARY (self), FALSE);
   g_return_val_if_fail (word != NULL, FALSE);
 
   if (word_len < 0)
     word_len = strlen (word);
 
-  return SPELLING_DICTIONARY_GET_CLASS (self)->contains_word (self, word, word_len);
+  spelling_dictionary_lock (self);
+  ret = SPELLING_DICTIONARY_GET_CLASS (self)->contains_word (self, word, word_len);
+  spelling_dictionary_unlock (self);
+
+  return ret;
 }
 
 /**
@@ -135,6 +182,8 @@ spelling_dictionary_list_corrections (SpellingDictionary *self,
                                       const char         *word,
                                       gssize              word_len)
 {
+  char **ret;
+
   g_return_val_if_fail (SPELLING_IS_DICTIONARY (self), NULL);
   g_return_val_if_fail (word != NULL, NULL);
   g_return_val_if_fail (word != NULL || word_len == 0, NULL);
@@ -145,7 +194,11 @@ spelling_dictionary_list_corrections (SpellingDictionary *self,
   if (word_len == 0)
     return NULL;
 
-  return SPELLING_DICTIONARY_GET_CLASS (self)->list_corrections (self, word, word_len);
+  spelling_dictionary_lock (self);
+  ret = SPELLING_DICTIONARY_GET_CLASS (self)->list_corrections (self, word, word_len);
+  spelling_dictionary_unlock (self);
+
+  return ret;
 }
 
 void
@@ -156,7 +209,11 @@ spelling_dictionary_add_word (SpellingDictionary *self,
   g_return_if_fail (word != NULL);
 
   if (SPELLING_DICTIONARY_GET_CLASS (self)->add_word)
-    SPELLING_DICTIONARY_GET_CLASS (self)->add_word (self, word);
+    {
+      spelling_dictionary_lock (self);
+      SPELLING_DICTIONARY_GET_CLASS (self)->add_word (self, word);
+      spelling_dictionary_unlock (self);
+    }
 }
 
 void
@@ -167,16 +224,56 @@ spelling_dictionary_ignore_word (SpellingDictionary *self,
   g_return_if_fail (word != NULL);
 
   if (SPELLING_DICTIONARY_GET_CLASS (self)->ignore_word)
-    SPELLING_DICTIONARY_GET_CLASS (self)->ignore_word (self, word);
+    {
+      spelling_dictionary_lock (self);
+      SPELLING_DICTIONARY_GET_CLASS (self)->ignore_word (self, word);
+      spelling_dictionary_unlock (self);
+    }
 }
 
 const char *
 spelling_dictionary_get_extra_word_chars (SpellingDictionary *self)
 {
+  const char *ret = "";
+
   g_return_val_if_fail (SPELLING_IS_DICTIONARY (self), NULL);
 
   if (SPELLING_DICTIONARY_GET_CLASS (self)->get_extra_word_chars)
-    return SPELLING_DICTIONARY_GET_CLASS (self)->get_extra_word_chars (self);
+    {
+      spelling_dictionary_lock (self);
+      ret = SPELLING_DICTIONARY_GET_CLASS (self)->get_extra_word_chars (self);
+      spelling_dictionary_unlock (self);
+    }
 
-  return "";
+  return ret;
+}
+
+GtkBitset *
+_spelling_dictionary_check_words (SpellingDictionary     *self,
+                                  const char             *text,
+                                  const SpellingBoundary *positions,
+                                  guint                   n_positions)
+{
+  gboolean (*contains_word) (SpellingDictionary *, const char *, gssize);
+  GtkBitset *bitset;
+
+  g_return_val_if_fail (SPELLING_IS_DICTIONARY (self), NULL);
+  g_return_val_if_fail (text != NULL, NULL);
+
+  bitset = gtk_bitset_new_empty ();
+
+  contains_word = SPELLING_DICTIONARY_GET_CLASS (self)->contains_word;
+
+  spelling_dictionary_lock (self);
+  for (guint i = 0; i < n_positions; i++)
+    {
+      const char *word = &text[positions[i].byte_offset];
+      guint wordlen = positions[i].byte_length;
+
+      if (!(*contains_word) (self, word, wordlen))
+        gtk_bitset_add (bitset, i);
+    }
+  spelling_dictionary_unlock (self);
+
+  return bitset;
 }
