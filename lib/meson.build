@@ -34,6 +34,7 @@ libspelling_deps = [
   libgio_dep,
   libgtk_dep,
   gtksource_dep,
+  libsysprof_capture_dep,
 ]
 
 if get_option('enchant').enabled()

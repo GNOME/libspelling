@@ -19,6 +19,29 @@ config_h.set_quoted('GETTEXT_PACKAGE', 'libspelling')
 config_h.set_quoted('PACKAGE_LOCALE_DIR', join_paths(get_option('prefix'), get_option('datadir'), 'locale'))
 config_h.set10('HAVE_ENCHANT', get_option('enchant').enabled())
 
+# libsysprof-capture support for profiling
+if get_option('sysprof')
+  libsysprof_capture_dep = dependency('sysprof-capture-4',
+    required: get_option('sysprof'),
+    default_options: [
+      'examples=false',
+      'gtk=false',
+      'help=false',
+      'install-static=false',
+      'libsysprof=false',
+      'sysprofd=none',
+      'tests=false',
+      'tools=false',
+    ],
+    fallback: ['sysprof', 'libsysprof_capture_dep'],
+  )
+  config_h.set('HAVE_SYSPROF', libsysprof_capture_dep.found())
+  profiler_enabled = true
+else
+  libsysprof_capture_dep = disabler()
+  profiler_enabled = false
+endif
+
 # Detect and set symbol visibility
 if get_option('default_library') != 'static'
   if host_machine.system() == 'windows'

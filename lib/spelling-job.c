@@ -24,6 +24,7 @@
 
 #include "spelling-dictionary-internal.h"
 #include "spelling-job-private.h"
+#include "spelling-trace.h"
 
 #define GDK_ARRAY_NAME spelling_boundaries
 #define GDK_ARRAY_TYPE_NAME SpellingBoundaries
@@ -317,9 +318,12 @@ spelling_job_check (GTask        *task,
   result = g_array_new (FALSE, FALSE, sizeof (SpellingMistakes));
   g_array_set_clear_func (result, clear_mistakes);
 
+  SPELLING_PROFILER_LOG ("Checking %u fragments", self->fragments->len);
+
   for (guint f = 0; f < self->fragments->len; f++)
     {
       const SpellingFragment *fragment = &g_array_index (self->fragments, SpellingFragment, f);
+      G_GNUC_UNUSED g_autofree char *message = NULL;
       g_autoptr(GtkBitset) bitset = NULL;
       g_autofree PangoLogAttr *attrs = NULL;
       SpellingMistakes mistakes;
@@ -330,6 +334,8 @@ spelling_job_check (GTask        *task,
       gsize attrslen;
       gsize i;
       guint pos;
+
+      SPELLING_PROFILER_BEGIN_MARK
 
       spelling_boundaries_clear (&boundaries);
 
@@ -392,6 +398,14 @@ spelling_job_check (GTask        *task,
 
           g_array_append_val (result, mistakes);
         }
+
+      if G_UNLIKELY (SPELLING_PROFILER_ACTIVE)
+        message = g_strdup_printf ("%u chars, %u bytes, %u mistakes",
+                                   (guint)attrslen,
+                                   (guint)textlen,
+                                   mistakes.boundaries ? mistakes.boundaries->len : 0);
+
+      SPELLING_PROFILER_END_MARK ("Check", message);
     }
 
   spelling_boundaries_clear (&boundaries);

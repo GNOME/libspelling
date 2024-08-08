@@ -1,3 +1,4 @@
 option('docs', type: 'boolean', value: true, description: 'Generate documentation')
 option('enchant', type: 'feature', value: 'enabled', description: 'Use enchant for spellchecking')
+option('sysprof', type: 'boolean', value: true, description: 'Generate profiler data using Sysprof')
 option('vapi', type: 'boolean', value: true, description: 'Generate Vala vapi')
