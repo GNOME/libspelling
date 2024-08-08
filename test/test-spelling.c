@@ -24,6 +24,40 @@
 
 #include <libspelling.h>
 
+static void
+on_click_pressed_cb (SpellingTextBufferAdapter *adapter,
+                     int                        n_press,
+                     double                     x,
+                     double                     y,
+                     GtkGestureClick           *click)
+{
+  GdkEventSequence *sequence;
+  GtkTextBuffer *buffer;
+  GtkTextIter iter, begin, end;
+  GtkWidget *widget;
+  GdkEvent *event;
+  int buf_x, buf_y;
+
+  widget = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (click));
+  sequence = gtk_gesture_single_get_current_sequence (GTK_GESTURE_SINGLE (click));
+  event = gtk_gesture_get_last_event (GTK_GESTURE (click), sequence);
+
+  if (n_press != 1 || !gdk_event_triggers_context_menu (event))
+    return;
+
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (widget));
+  if (gtk_text_buffer_get_selection_bounds (buffer, &begin, &end))
+    return;
+
+  gtk_text_view_window_to_buffer_coords (GTK_TEXT_VIEW (widget),
+                                         GTK_TEXT_WINDOW_WIDGET,
+                                         x, y, &buf_x, &buf_y);
+  gtk_text_view_get_iter_at_location (GTK_TEXT_VIEW (widget), &iter, buf_x, buf_y);
+  gtk_text_buffer_select_range (buffer, &iter, &iter);
+
+  spelling_text_buffer_adapter_update_corrections (adapter);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -43,6 +77,7 @@ main (int   argc,
   g_autofree char *contents = NULL;
   g_autofree char *language_id = NULL;
   g_autofree char *scheme_id = NULL;
+  GtkGesture *gesture;
 
   const GOptionEntry entries[] = {
     { "language", 'l', 0, G_OPTION_ARG_STRING, &language_id, "The GtkSourceView language ID to use", "c" },
@@ -121,6 +156,18 @@ main (int   argc,
   gtk_widget_insert_action_group (GTK_WIDGET (source_view), "spelling", G_ACTION_GROUP (adapter));
 
   spelling_text_buffer_adapter_set_enabled (adapter, TRUE);
+
+  gesture = gtk_gesture_click_new ();
+  gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
+  gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture),
+                                              GTK_PHASE_CAPTURE);
+  g_signal_connect_object (gesture,
+                           "pressed",
+                           G_CALLBACK (on_click_pressed_cb),
+                           adapter,
+                           G_CONNECT_SWAPPED);
+  gtk_widget_add_controller (GTK_WIDGET (source_view),
+                             GTK_EVENT_CONTROLLER (gesture));
 
   gtk_window_present (window);
   g_main_loop_run (main_loop);
