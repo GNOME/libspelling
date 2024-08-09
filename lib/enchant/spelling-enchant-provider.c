@@ -115,9 +115,9 @@ get_display_language (const char *code)
 /**
  * spelling_enchant_provider_new:
  *
- * Create a new #SpellingEnchantProvider.
+ * Create a new `SpellingEnchantProvider`.
  *
- * Returns: (transfer full): a newly created #SpellingEnchantProvider
+ * Returns: (transfer full): a newly created `SpellingEnchantProvider`
  */
 SpellingProvider *
 spelling_enchant_provider_new (void)

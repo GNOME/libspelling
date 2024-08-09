@@ -24,6 +24,12 @@
 
 #include "spelling-dictionary-internal.h"
 
+/**
+ * SpellingDictionary:
+ *
+ * Abstract base class for spellchecking dictionaries.
+ */
+
 G_DEFINE_ABSTRACT_TYPE (SpellingDictionary, spelling_dictionary, G_TYPE_OBJECT)
 
 enum {
@@ -120,10 +126,13 @@ spelling_dictionary_class_init (SpellingDictionaryClass *klass)
   klass->lock = spelling_dictionary_real_lock;
   klass->unlock = spelling_dictionary_real_unlock;
 
+  /**
+   * SpellingDictionary:code:
+   *
+   * The language code, for example `en_US`.
+   */
   properties[PROP_CODE] =
-    g_param_spec_string ("code",
-                         "Code",
-                         "The language code",
+    g_param_spec_string ("code", NULL, NULL,
                          NULL,
                          (G_PARAM_READWRITE |
                           G_PARAM_CONSTRUCT_ONLY |
@@ -138,6 +147,14 @@ spelling_dictionary_init (SpellingDictionary *self)
   g_mutex_init (&self->mutex);
 }
 
+/**
+ * spelling_dictionary_get_code:
+ * @self: a `SpellingDictionary`
+ *
+ * Gets the language code of the dictionary, or %NULL if undefined.
+ *
+ * Returns: (transfer none) (nullable): the language code of the dictionary
+ */
 const char *
 spelling_dictionary_get_code (SpellingDictionary *self)
 {
@@ -146,6 +163,16 @@ spelling_dictionary_get_code (SpellingDictionary *self)
   return self->code;
 }
 
+/**
+ * spelling_dictionary_contains_word:
+ * @self: a `SpellingDictionary`
+ * @word: a word to be checked
+ * @word_len: length of the word, in bytes
+ *
+ * Checks if the dictionary contains @word.
+ *
+ * Returns: %TRUE if the dictionary contains the word
+ */
 gboolean
 spelling_dictionary_contains_word (SpellingDictionary *self,
                                    const char         *word,
@@ -168,7 +195,7 @@ spelling_dictionary_contains_word (SpellingDictionary *self,
 
 /**
  * spelling_dictionary_list_corrections:
- * @self: a #SpellingDictionary
+ * @self: a `SpellingDictionary`
  * @word: a word to be checked
  * @word_len: the length of @word, or -1 if @word is zero-terminated
  *
@@ -201,6 +228,13 @@ spelling_dictionary_list_corrections (SpellingDictionary *self,
   return ret;
 }
 
+/**
+ * spelling_dictionary_add_word:
+ * @self: a `SpellingDictionary`
+ * @word: a word to be added
+ *
+ * Adds @word to the dictionary.
+ */
 void
 spelling_dictionary_add_word (SpellingDictionary *self,
                               const char         *word)
@@ -216,6 +250,13 @@ spelling_dictionary_add_word (SpellingDictionary *self,
     }
 }
 
+/**
+ * spelling_dictionary_ignore_word:
+ * @self: a `SpellingDictionary`
+ * @word: a word to be ignored
+ *
+ * Requests the dictionary to ignore @word.
+ */
 void
 spelling_dictionary_ignore_word (SpellingDictionary *self,
                                  const char         *word)
@@ -231,6 +272,14 @@ spelling_dictionary_ignore_word (SpellingDictionary *self,
     }
 }
 
+/**
+ * spelling_dictionary_get_extra_word_chars:
+ * @self: a `SpellingDictionary`
+ *
+ * Gets the extra word characters of the dictionary.
+ *
+ * Returns: (transfer none): extra word characters
+ */
 const char *
 spelling_dictionary_get_extra_word_chars (SpellingDictionary *self)
 {
