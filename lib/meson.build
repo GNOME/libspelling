@@ -34,8 +34,11 @@ libspelling_deps = [
   libgio_dep,
   libgtk_dep,
   gtksource_dep,
-  libsysprof_capture_dep,
 ]
+
+if profiler_enabled
+  libspelling_deps += [libsysprof_capture_dep]
+endif
 
 if get_option('enchant').enabled()
   subdir('enchant')
