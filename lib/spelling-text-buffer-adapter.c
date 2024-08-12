@@ -30,6 +30,13 @@
 #include "spelling-menu-private.h"
 #include "spelling-text-buffer-adapter.h"
 
+/**
+ * SpellingTextBufferAdapter:
+ *
+ * `SpellingTextBufferAdapter` implements helpers to easily add spellchecking
+ * capabilities to a `GtkSourceBuffer`.
+ */
+
 #define INVALIDATE_DELAY_MSECS 100
 #define MAX_WORD_CHARS 100
 
@@ -365,6 +372,15 @@ get_word_at_position (SpellingTextBufferAdapter *self,
   return TRUE;
 }
 
+/**
+ * spelling_text_buffer_adapter_new:
+ * @buffer: (not nullable): a `GtkSourceBuffer`
+ * @checker: a `SpellingChecker`
+ *
+ * Create a new `SpellingTextBufferAdapter`.
+ *
+ * Returns: (transfer full): a newly created `SpellingTextBufferAdapter`
+ */
 SpellingTextBufferAdapter *
 spelling_text_buffer_adapter_new (GtkSourceBuffer *buffer,
                                   SpellingChecker *checker)
@@ -378,6 +394,15 @@ spelling_text_buffer_adapter_new (GtkSourceBuffer *buffer,
                        NULL);
 }
 
+/**
+ * spelling_text_buffer_adapter_invalidate_all:
+ * @self: a `SpellingTextBufferAdapter`
+ *
+ * Invalidate the spelling engine, to force parsing again.
+ *
+ * Invalidation is automatically done on [property@GtkSource.Buffer:loading]
+ * change.
+ */
 void
 spelling_text_buffer_adapter_invalidate_all (SpellingTextBufferAdapter *self)
 {
@@ -543,6 +568,13 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
                            G_CONNECT_SWAPPED);
 }
 
+/**
+ * spelling_text_buffer_adapter_set_enabled:
+ * @self: a `SpellingTextBufferAdapter`
+ * @enabled: whether the spellcheck is enabled
+ *
+ * If %TRUE spellcheck is enabled.
+ */
 void
 spelling_text_buffer_adapter_set_enabled (SpellingTextBufferAdapter *self,
                                           gboolean                   enabled)
@@ -858,31 +890,43 @@ spelling_text_buffer_adapter_class_init (SpellingTextBufferAdapterClass *klass)
   object_class->get_property = spelling_text_buffer_adapter_get_property;
   object_class->set_property = spelling_text_buffer_adapter_set_property;
 
+  /**
+   * SpellingTextBufferAdapter:buffer:
+   *
+   * The [class@GtkSource.Buffer].
+   */
   properties[PROP_BUFFER] =
-    g_param_spec_object ("buffer",
-                         "Buffer",
-                         "Buffer",
+    g_param_spec_object ("buffer", NULL, NULL,
                          GTK_SOURCE_TYPE_BUFFER,
                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * SpellingTextBufferAdapter:checker:
+   *
+   * The [class@Spelling.Checker].
+   */
   properties[PROP_CHECKER] =
-    g_param_spec_object ("checker",
-                         "Checker",
-                         "Checker",
+    g_param_spec_object ("checker", NULL, NULL,
                          SPELLING_TYPE_CHECKER,
                          (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * SpellingTextBufferAdapter:enabled:
+   *
+   * Whether spellcheck is enabled.
+   */
   properties[PROP_ENABLED] =
-    g_param_spec_boolean ("enabled",
-                          "Enabled",
-                          "If spellcheck is enabled",
+    g_param_spec_boolean ("enabled", NULL, NULL,
                           TRUE,
                           (G_PARAM_READWRITE | G_PARAM_EXPLICIT_NOTIFY | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * SpellingTextBufferAdapter:language:
+   *
+   * The language code, such as `en_US`.
+   */
   properties[PROP_LANGUAGE] =
-    g_param_spec_string ("language",
-                         "Language",
-                         "The language code such as en_US",
+    g_param_spec_string ("language", NULL, NULL,
                          NULL,
                          (G_PARAM_READWRITE | G_PARAM_EXPLICIT_NOTIFY | G_PARAM_STATIC_STRINGS));
 
@@ -936,11 +980,11 @@ spelling_text_buffer_adapter_init (SpellingTextBufferAdapter *self)
 
 /**
  * spelling_text_buffer_adapter_get_checker:
- * @self: a #SpellingTextBufferAdapter
+ * @self: a `SpellingTextBufferAdapter`
  *
  * Gets the checker used by the adapter.
  *
- * Returns: (transfer none) (nullable): a #SpellingChecker or %NULL
+ * Returns: (transfer none) (nullable): a `SpellingChecker` or %NULL
  */
 SpellingChecker *
 spelling_text_buffer_adapter_get_checker (SpellingTextBufferAdapter *self)
@@ -966,6 +1010,13 @@ spelling_text_buffer_adapter_checker_notify_language (SpellingTextBufferAdapter 
   spelling_text_buffer_adapter_set_action_state (self, "language", g_variant_new_string (code));
 }
 
+/**
+ * spelling_text_buffer_adapter_set_checker:
+ * @self: a `SpellingTextBufferAdapter`
+ * @checker: a `SpellingChecker`
+ *
+ * Set the [class@Spelling.Checker] used for spellchecking.
+ */
 void
 spelling_text_buffer_adapter_set_checker (SpellingTextBufferAdapter *self,
                                           SpellingChecker           *checker)
@@ -1005,11 +1056,11 @@ spelling_text_buffer_adapter_set_checker (SpellingTextBufferAdapter *self,
 
 /**
  * spelling_text_buffer_adapter_get_buffer:
- * @self: a #SpellingTextBufferAdapter
+ * @self: a `SpellingTextBufferAdapter`
  *
  * Gets the underlying buffer for the adapter.
  *
- * Returns: (transfer none) (nullable): a #GtkSourceBuffer
+ * Returns: (transfer none) (nullable): a `GtkSourceBuffer`
  */
 GtkSourceBuffer *
 spelling_text_buffer_adapter_get_buffer (SpellingTextBufferAdapter *self)
@@ -1019,6 +1070,14 @@ spelling_text_buffer_adapter_get_buffer (SpellingTextBufferAdapter *self)
   return self->buffer;
 }
 
+/**
+ * spelling_text_buffer_adapter_get_language:
+ * @self: a `SpellingTextBufferAdapter`
+ *
+ * Gets the checker language.
+ *
+ * Returns: (transfer none) (nullable): a language code
+ */
 const char *
 spelling_text_buffer_adapter_get_language (SpellingTextBufferAdapter *self)
 {
@@ -1027,6 +1086,13 @@ spelling_text_buffer_adapter_get_language (SpellingTextBufferAdapter *self)
   return self->checker ? spelling_checker_get_language (self->checker) : NULL;
 }
 
+/**
+ * spelling_text_buffer_adapter_set_language:
+ * @self: a `SpellingTextBufferAdapter`
+ * @language: the language to use
+ *
+ * Sets the language code to use by the checker, such as `en_US`.
+ */
 void
 spelling_text_buffer_adapter_set_language (SpellingTextBufferAdapter *self,
                                            const char                *language)
@@ -1053,11 +1119,11 @@ spelling_text_buffer_adapter_set_language (SpellingTextBufferAdapter *self,
 
 /**
  * spelling_text_buffer_adapter_get_tag:
- * @self: a #SpellingTextBufferAdapter
+ * @self: a `SpellingTextBufferAdapter`
  *
  * Gets the tag used for potentially misspelled words.
  *
- * Returns: (transfer none) (nullable): a #GtkTextTag or %NULL
+ * Returns: (transfer none) (nullable): a `GtkTextTag` or %NULL
  */
 GtkTextTag *
 spelling_text_buffer_adapter_get_tag (SpellingTextBufferAdapter *self)
@@ -1067,6 +1133,14 @@ spelling_text_buffer_adapter_get_tag (SpellingTextBufferAdapter *self)
   return self->tag;
 }
 
+/**
+ * spelling_text_buffer_adapter_get_enabled:
+ * @self: a `SpellingTextBufferAdapter`
+ *
+ * Gets if the spellcheck is enabled.
+ *
+ * Returns: %TRUE if enabled
+ */
 gboolean
 spelling_text_buffer_adapter_get_enabled (SpellingTextBufferAdapter *self)
 {
@@ -1080,11 +1154,11 @@ spelling_text_buffer_adapter_get_enabled (SpellingTextBufferAdapter *self)
 
 /**
  * spelling_text_buffer_adapter_get_menu_model:
- * @self: a #SpellingTextBufferAdapter
+ * @self: a `SpellingTextBufferAdapter`
  *
  * Gets the menu model containing corrections
  *
- * Returns: (transfer none): a #GMenuModel
+ * Returns: (transfer none): a `GMenuModel`
  */
 GMenuModel *
 spelling_text_buffer_adapter_get_menu_model (SpellingTextBufferAdapter *self)
@@ -1195,7 +1269,7 @@ spelling_language_action (SpellingTextBufferAdapter *self,
 
 /**
  * spelling_text_buffer_adapter_update_corrections:
- * @self: a #SpellingTextBufferAdapter
+ * @self: a `SpellingTextBufferAdapter`
  *
  * Looks at the current cursor position and updates the list of
  * corrections based on the current word.

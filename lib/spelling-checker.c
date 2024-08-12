@@ -27,6 +27,13 @@
 #include "spelling-dictionary.h"
 #include "spelling-provider.h"
 
+/**
+ * SpellingChecker:
+ *
+ * `SpellingChecker` is the core class of libspelling. It provides high-level
+ * APIs for spellchecking.
+ */
+
 struct _SpellingChecker
 {
   GObject             parent_instance;
@@ -49,9 +56,9 @@ static GParamSpec *properties[N_PROPS];
 /**
  * spelling_checker_new:
  *
- * Create a new #SpellingChecker.
+ * Create a new `SpellingChecker`.
  *
- * Returns: (transfer full): a newly created #SpellingChecker
+ * Returns: (transfer full): a newly created `SpellingChecker`
  */
 SpellingChecker *
 spelling_checker_new (SpellingProvider *provider,
@@ -155,12 +162,10 @@ spelling_checker_class_init (SpellingCheckerClass *klass)
    * SpellingChecker:language:
    *
    * The "language" to use when checking words with the configured
-   * #SpellingProvider. For example, `en_US`.
+   * `SpellingProvider`. For example, `en_US`.
    */
   properties[PROP_LANGUAGE] =
-    g_param_spec_string ("language",
-                         "Language",
-                         "The language code",
+    g_param_spec_string ("language", NULL, NULL,
                          NULL,
                          (G_PARAM_READWRITE | G_PARAM_EXPLICIT_NOTIFY | G_PARAM_STATIC_STRINGS));
 
@@ -171,13 +176,11 @@ spelling_checker_class_init (SpellingCheckerClass *klass)
    * information to the spell checker.
    *
    * Currently, only Enchant is supported, and requires using the
-   * #SpellingEnchantProvider. Setting this to %NULL will get
+   * `SpellingEnchantProvider`. Setting this to %NULL will get
    * the default provider.
    */
   properties[PROP_PROVIDER] =
-    g_param_spec_object ("provider",
-                         "Provider",
-                         "The spell check provider",
+    g_param_spec_object ("provider", NULL, NULL,
                          SPELLING_TYPE_PROVIDER,
                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
@@ -206,7 +209,7 @@ spelling_checker_get_language (SpellingChecker *self)
 
 /**
  * spelling_checker_set_language:
- * @self: an #SpellingChecker
+ * @self: a `SpellingChecker`
  * @language: the language to use
  *
  * Sets the language code to use when communicating with the provider,
@@ -234,7 +237,7 @@ spelling_checker_set_language (SpellingChecker *self,
  *
  * Currently, only Enchant-2 is supported.
  *
- * Returns: (transfer none) (not nullable): an #SpellingProvider
+ * Returns: (transfer none) (not nullable): a `SpellingProvider`
  */
 SpellingProvider *
 spelling_checker_get_provider (SpellingChecker *self)
@@ -244,6 +247,16 @@ spelling_checker_get_provider (SpellingChecker *self)
   return self->provider;
 }
 
+/**
+ * spelling_checker_check_word:
+ * @self: a `SpellingChecker`
+ * @word: a word to be checked
+ * @word_len: length of the word, in bytes
+ *
+ * Checks if the active dictionary contains @word.
+ *
+ * Returns: %TRUE if the dictionary contains the word
+ */
 gboolean
 spelling_checker_check_word (SpellingChecker *self,
                              const char      *word,
@@ -265,7 +278,7 @@ spelling_checker_check_word (SpellingChecker *self,
 
 /**
  * spelling_checker_list_corrections:
- * @self: a #SpellingChecker
+ * @self: a `SpellingChecker`
  * @word: a word to be checked
  *
  * Retrieves a list of possible corrections for @word.
@@ -286,6 +299,13 @@ spelling_checker_list_corrections (SpellingChecker *self,
   return spelling_dictionary_list_corrections (self->dictionary, word, -1);
 }
 
+/**
+ * spelling_checker_add_word:
+ * @self: a `SpellingChecker`
+ * @word: a word to be added
+ *
+ * Adds @word to the active dictionary.
+ */
 void
 spelling_checker_add_word (SpellingChecker *self,
                            const char      *word)
@@ -297,6 +317,13 @@ spelling_checker_add_word (SpellingChecker *self,
     spelling_dictionary_add_word (self->dictionary, word);
 }
 
+/**
+ * spelling_checker_ignore_word:
+ * @self: a `SpellingChecker`
+ * @word: a word to be ignored
+ *
+ * Requests the active dictionary to ignore @word.
+ */
 void
 spelling_checker_ignore_word (SpellingChecker *self,
                               const char      *word)
@@ -308,6 +335,14 @@ spelling_checker_ignore_word (SpellingChecker *self,
     spelling_dictionary_ignore_word (self->dictionary, word);
 }
 
+/**
+ * spelling_checker_get_extra_word_chars:
+ * @self: a `SpellingChecker`
+ *
+ * Gets the extra word characters of the active dictionary.
+ *
+ * Returns: (transfer none): extra word characters
+ */
 const char *
 spelling_checker_get_extra_word_chars (SpellingChecker *self)
 {
@@ -322,9 +357,9 @@ spelling_checker_get_extra_word_chars (SpellingChecker *self)
 /**
  * spelling_checker_get_default:
  *
- * Gets a default #SpellingChecker using the default provider and language.
+ * Gets a default `SpellingChecker` using the default provider and language.
  *
- * Returns: (transfer none): a #SpellingChecker
+ * Returns: (transfer none): a `SpellingChecker`
  */
 SpellingChecker *
 spelling_checker_get_default (void)

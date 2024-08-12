@@ -46,9 +46,9 @@ static GParamSpec *properties [N_PROPS];
 /**
  * spelling_enchant_dictionary_new:
  *
- * Create a new #SpellingEnchantDictionary.
+ * Create a new `SpellingEnchantDictionary`.
  *
- * Returns: (transfer full): a newly created #SpellingEnchantDictionary
+ * Returns: (transfer full): a newly created `SpellingEnchantDictionary`
  */
 SpellingDictionary *
 spelling_enchant_dictionary_new (const char *code,

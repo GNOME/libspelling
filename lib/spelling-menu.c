@@ -256,7 +256,7 @@ populate_languages (GMenu *menu)
  *
  * Creates a new menu which can be updated with spelling options.
  *
- * Returns: (transfer full): a #GMenuModel
+ * Returns: (transfer full): a `GMenuModel`
  */
 GMenuModel *
 spelling_menu_new (void)

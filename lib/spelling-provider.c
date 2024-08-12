@@ -29,6 +29,12 @@
 # include "enchant/spelling-enchant-provider.h"
 #endif
 
+/**
+ * SpellingProvider:
+ *
+ * Abstract base class for spellchecking providers.
+ */
+
 G_DEFINE_ABSTRACT_TYPE (SpellingProvider, spelling_provider, G_TYPE_OBJECT)
 
 enum {
@@ -96,6 +102,11 @@ spelling_provider_class_init (SpellingProviderClass *klass)
   object_class->get_property = spelling_provider_get_property;
   object_class->set_property = spelling_provider_set_property;
 
+  /**
+   * SpellingProvider:display-name:
+   *
+   * The display name.
+   */
   properties [PROP_DISPLAY_NAME] =
     g_param_spec_string ("display-name",
                          "Display Name",
@@ -111,6 +122,14 @@ spelling_provider_init (SpellingProvider *self)
 {
 }
 
+/**
+ * spelling_provider_get_display_name:
+ * @self: a `SpellingProvider`
+ *
+ * Gets the display name of the provider, or %NULL if undefined.
+ *
+ * Returns: (transfer none) (nullable): the display name of the provider
+ */
 const char *
 spelling_provider_get_display_name (SpellingProvider *self)
 {
@@ -124,7 +143,7 @@ spelling_provider_get_display_name (SpellingProvider *self)
  *
  * Gets the default spell provider.
  *
- * Returns: (transfer none): an #SpellingProvider
+ * Returns: (transfer none): a `SpellingProvider`
  */
 SpellingProvider *
 spelling_provider_get_default (void)
@@ -148,7 +167,7 @@ spelling_provider_get_default (void)
 
 /**
  * spelling_provider_supports_language:
- * @self: an #SpellingProvider
+ * @self: a `SpellingProvider`
  * @language: the language such as `en_US`.
  *
  * Checks of @language is supported by the provider.
@@ -167,11 +186,11 @@ spelling_provider_supports_language (SpellingProvider *self,
 
 /**
  * spelling_provider_list_languages:
- * @self: an #SpellingProvider
+ * @self: a `SpellingProvider`
  *
- * Gets a #GListModel of languages supported by the provider.
+ * Gets a `GListModel` of languages supported by the provider.
  *
- * Returns: (transfer full): a #GListModel of #SpellingLanguage
+ * Returns: (transfer full): a `GListModel` of `SpellingLanguage`
  */
 GListModel *
 spelling_provider_list_languages (SpellingProvider *self)
@@ -189,13 +208,13 @@ spelling_provider_list_languages (SpellingProvider *self)
 
 /**
  * spelling_provider_load_dictionary:
- * @self: an #SpellingProvider
+ * @self: a `SpellingProvider`
  * @language: the language to load such as `en_US`.
  *
- * Gets a #SpellingDictionary for the requested language, or %NULL
+ * Gets a `SpellingDictionary` for the requested language, or %NULL
  * if the language is not supported.
  *
- * Returns: (transfer full) (nullable): an #SpellingDictionary or %NULL
+ * Returns: (transfer full) (nullable): a `SpellingDictionary` or %NULL
  */
 SpellingDictionary *
 spelling_provider_load_dictionary (SpellingProvider *self,
@@ -213,6 +232,15 @@ spelling_provider_load_dictionary (SpellingProvider *self,
   return ret;
 }
 
+/**
+ * spelling_provider_get_default_code:
+ * @self: a `SpellingProvider`
+ *
+ * Gets the default language code for the detected system locales, or %NULL
+ * if the provider doesn't support any of them.
+ *
+ * Returns: (transfer none) (nullable): the default language code
+ */
 const char *
 spelling_provider_get_default_code (SpellingProvider *self)
 {

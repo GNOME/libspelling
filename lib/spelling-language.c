@@ -23,6 +23,12 @@
 
 #include "spelling-language-private.h"
 
+/**
+ * SpellingLanguage:
+ *
+ * Represents a spellchecking language.
+ */
+
 struct _SpellingLanguage
 {
   GObject parent_instance;
@@ -46,9 +52,9 @@ static GParamSpec *properties[N_PROPS];
 /**
  * spelling_language_new:
  *
- * Create a new #SpellingLanguage.
+ * Create a new `SpellingLanguage`.
  *
- * Returns: (transfer full): a newly created #SpellingLanguage
+ * Returns: (transfer full): a newly created `SpellingLanguage`
  */
 SpellingLanguage *
 spelling_language_new (const char *name,
@@ -137,24 +143,33 @@ spelling_language_class_init (SpellingLanguageClass *klass)
   object_class->get_property = spelling_language_get_property;
   object_class->set_property = spelling_language_set_property;
 
+  /**
+   * SpellingLanguage:name:
+   *
+   * The name of the language.
+   */
   properties[PROP_NAME] =
-    g_param_spec_string ("name",
-                         "Name",
-                         "The name of the language",
+    g_param_spec_string ("name", NULL, NULL,
                          NULL,
                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * SpellingLanguage:code:
+   *
+   * The language code.
+   */
   properties[PROP_CODE] =
-    g_param_spec_string ("code",
-                         "Code",
-                         "The language code",
+    g_param_spec_string ("code", NULL, NULL,
                          NULL,
                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * SpellingLanguage:group:
+   *
+   * A group for sorting, usually the country name.
+   */
   properties[PROP_GROUP] =
-    g_param_spec_string ("group",
-                         "Group",
-                         "A group for sorting, usually the country name",
+    g_param_spec_string ("group", NULL, NULL,
                          NULL,
                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
@@ -166,6 +181,14 @@ spelling_language_init (SpellingLanguage *self)
 {
 }
 
+/**
+ * spelling_language_get_name:
+ * @self: a `SpellingLanguage`
+ *
+ * Gets the name of the language, or %NULL if undefined.
+ *
+ * Returns: (transfer none) (nullable): the name of the language
+ */
 const char *
 spelling_language_get_name (SpellingLanguage *self)
 {
@@ -174,6 +197,14 @@ spelling_language_get_name (SpellingLanguage *self)
   return self->name;
 }
 
+/**
+ * spelling_language_get_code:
+ * @self: a `SpellingLanguage`
+ *
+ * Gets the code of the language, or %NULL if undefined.
+ *
+ * Returns: (transfer none) (nullable): the code of the language
+ */
 const char *
 spelling_language_get_code (SpellingLanguage *self)
 {
@@ -182,6 +213,14 @@ spelling_language_get_code (SpellingLanguage *self)
   return self->code;
 }
 
+/**
+ * spelling_language_get_group:
+ * @self: a `SpellingLanguage`
+ *
+ * Gets the group of the language, or %NULL if undefined.
+ *
+ * Returns: (transfer none) (nullable): the group of the language
+ */
 const char *
 spelling_language_get_group (SpellingLanguage *self)
 {

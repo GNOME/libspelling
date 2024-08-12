@@ -48,6 +48,12 @@ _spelling_init (void)
     }
 }
 
+/**
+ * spelling_init:
+ *
+ * Call this function before using any other libspelling functions in your
+ * applications. It will initialize everything needed to operate the library.
+ */
 void
 spelling_init (void)
 {
