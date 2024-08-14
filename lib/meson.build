@@ -88,6 +88,7 @@ libspelling_dep = declare_dependency(
          dependencies: libspelling_deps,
   include_directories: [include_directories('.')],
 )
+meson.override_dependency('libspelling-' + api_version, libspelling_dep)
 
 install_headers(libspelling_public_headers, subdir: 'libspelling-' + api_version)
 
