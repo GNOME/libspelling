@@ -104,25 +104,27 @@ pkg.generate(
   install_dir: join_paths(get_option('libdir'), 'pkgconfig')
 )
 
-gnome = import('gnome')
-libspelling_gir = gnome.generate_gir(libspelling,
-            nsversion: api_version,
-              sources: [libspelling_public_sources, libspelling_public_headers],
-            namespace: 'Spelling',
-        symbol_prefix: 'spelling',
-    identifier_prefix: 'Spelling',
-             includes: ['Gio-2.0', 'Gtk-4.0', 'GtkSource-5'],
-      export_packages: 'libspelling-' + api_version,
-              install: true,
-               header: 'libspelling.h',
-           extra_args: '-DLIBSPELLING_COMPILATION',
-)
-
-if get_option('vapi')
-  spelling_vapi = gnome.generate_vapi('libspelling-' + api_version,
-          sources: libspelling_gir.get(0),
-          install: true,
-      install_dir: join_paths(datadir, 'vala', 'vapi'),
-         packages: ['gio-2.0', 'gtk4', 'gtksourceview-5'],
+if get_option('introspection').enabled()
+  gnome = import('gnome')
+  libspelling_gir = gnome.generate_gir(libspelling,
+              nsversion: api_version,
+                sources: [libspelling_public_sources, libspelling_public_headers],
+              namespace: 'Spelling',
+          symbol_prefix: 'spelling',
+      identifier_prefix: 'Spelling',
+               includes: ['Gio-2.0', 'Gtk-4.0', 'GtkSource-5'],
+        export_packages: 'libspelling-' + api_version,
+                install: true,
+                 header: 'libspelling.h',
+             extra_args: '-DLIBSPELLING_COMPILATION',
   )
+
+  if get_option('vapi')
+    spelling_vapi = gnome.generate_vapi('libspelling-' + api_version,
+            sources: libspelling_gir.get(0),
+            install: true,
+        install_dir: join_paths(datadir, 'vala', 'vapi'),
+           packages: ['gio-2.0', 'gtk4', 'gtksourceview-5'],
+    )
+  endif
 endif

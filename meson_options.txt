@@ -1,4 +1,5 @@
 option('docs', type: 'boolean', value: true, description: 'Generate documentation')
 option('enchant', type: 'feature', value: 'enabled', description: 'Use enchant for spellchecking')
+option('introspection', type: 'feature', value: 'enabled', description: 'Generate gir data (requires gobject-introspection)')
 option('sysprof', type: 'boolean', value: true, description: 'Generate profiler data using Sysprof')
-option('vapi', type: 'boolean', value: true, description: 'Generate Vala vapi')
+option('vapi', type: 'boolean', value: true, description: 'Generate Vala vapi (Requires introspection)')
