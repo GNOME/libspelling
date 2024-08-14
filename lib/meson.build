@@ -95,7 +95,7 @@ pkg = import('pkgconfig')
 pkg.generate(
   description: 'A spellcheck library for GTK',
     libraries: libspelling,
-         name: 'libspelling',
+         name: 'libspelling-' + api_version,
      filebase: 'libspelling-' + api_version,
       version: meson.project_version(),
       subdirs: 'libspelling-' + api_version,
