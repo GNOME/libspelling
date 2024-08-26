@@ -1,4 +1,5 @@
 api_version = '1'
+so_version = '2'
 
 libspelling_private_sources = [
   'cjhtextregion.c',
@@ -77,8 +78,9 @@ libspelling_static_dep = declare_dependency(
 libspelling = shared_library('spelling-' + api_version,
            dependencies: [libspelling_static_dep],
   gnu_symbol_visibility: 'hidden',
-                version: '@0@.0.0'.format(api_version),
-        darwin_versions: '@0@.0'.format(api_version),
+              soversion: so_version,
+                version: '@0@.0.0'.format(so_version),
+        darwin_versions: '@0@.0'.format(so_version),
                 install: true,
                  c_args: ['-DLIBSPELLING_COMPILATION'] + release_args,
 )
