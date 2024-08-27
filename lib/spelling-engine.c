@@ -538,5 +538,7 @@ spelling_engine_invalidate (SpellingEngine *self,
 
   _cjh_text_region_replace (self->region, position, length, TAG_NEEDS_CHECK);
 
+  self->adapter.clear_tag (self->instance, position, length);
+
   spelling_engine_queue_update (self, 0);
 }
