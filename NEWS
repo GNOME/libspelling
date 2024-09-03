@@ -1,3 +1,20 @@
+libspelling 0.3.1
+=================
+
+This is an unstable release for GNOME 47.rc.
+
+ * Immediately clear tags for invalidated regions without round-tripping
+   to the checker thread.
+ * Bump soname for ABI changes in 0.3
+ * Fix licenses to be LGPLv2.1+
+ * Add sysprof profiler marks for performance profiling
+ * Update example so people know to copy the button-press work
+   to update the menu immediately.
+ * Fix pkg-config fields
+ * Fix libspelling usage from subproject
+ * Make introspection building optional
+ * Documentation improvements
+
 libspelling 0.3.0
 =================
 
