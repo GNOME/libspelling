@@ -168,6 +168,8 @@ spelling_engine_add_range (SpellingEngine *self,
   gsize ret;
 
   g_assert (SPELLING_IS_ENGINE (self));
+  g_assert (self->active != NULL);
+  g_assert (SPELLING_IS_JOB (self->active));
   g_assert (begin <= end);
   g_assert (all != NULL);
   g_assert (bitset != NULL);
@@ -301,6 +303,8 @@ spelling_engine_tick (gpointer data)
   g_autoptr(GtkBitset) bitset = NULL;
   g_autoptr(GtkBitset) all = NULL;
   const CjhTextRegionRun *run;
+  SpellingDictionary *dictionary;
+  PangoLanguage *language;
   CollectRanges collect;
   gsize real_offset;
   guint cursor;
@@ -308,11 +312,20 @@ spelling_engine_tick (gpointer data)
   g_assert (SPELLING_IS_ENGINE (self));
   g_assert (self->active == NULL);
 
+  dictionary = self->adapter.get_dictionary (self->instance);
+  language = self->adapter.get_language (self->instance);
+
+  /* Be safe against bad dictionary installations */
+  if (dictionary == NULL || language == NULL)
+    {
+      g_clear_handle_id (&self->queued_update_handler, g_source_remove);
+      return G_SOURCE_REMOVE;
+    }
+
+  self->active = spelling_job_new (dictionary, language);
+
   bitset = gtk_bitset_new_empty ();
   all = gtk_bitset_new_empty ();
-
-  self->active = spelling_job_new (self->adapter.get_dictionary (self->instance),
-                                   self->adapter.get_language (self->instance));
 
   /* Always check the cursor location so that spellcheck feels snappy */
   cursor = self->adapter.get_cursor (self->instance);
