@@ -81,6 +81,9 @@ spelling_corrections_get_item_attributes (GMenuModel  *model,
   const char *correction;
   GHashTable *ht;
 
+  g_assert (G_IS_MENU_MODEL (model));
+  g_assert (attributes != NULL);
+
   *attributes = NULL;
 
   if (position < 0 ||
@@ -89,6 +92,8 @@ spelling_corrections_get_item_attributes (GMenuModel  *model,
     return;
 
   correction = self->corrections[position];
+
+  g_assert (correction != NULL);
 
   ht = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
   g_hash_table_insert (ht, g_strdup (G_MENU_ATTRIBUTE_ACTION), g_variant_ref_sink (g_variant_new_string ("spelling.correct")));
