@@ -1043,7 +1043,9 @@ spelling_text_buffer_adapter_set_checker (SpellingTextBufferAdapter *self,
                                G_CALLBACK (spelling_text_buffer_adapter_checker_notify_language),
                                self,
                                G_CONNECT_SWAPPED);
-      code = spelling_checker_get_language (checker);
+
+      if (!(code = spelling_checker_get_language (checker)))
+        code = "";
     }
 
   spelling_engine_invalidate_all (self->engine);
