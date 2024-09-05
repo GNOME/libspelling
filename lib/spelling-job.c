@@ -357,6 +357,7 @@ spelling_job_check (GTask        *task,
       for (gsize count = 0; TRUE; count++)
         {
           SpellingBoundary boundary;
+          const char *before = p;
 
           /* Occasionally check to break out of large runs */
           if ((count & 0xFF) == 0 && g_atomic_int_get (&fragment->must_discard))
@@ -369,7 +370,17 @@ spelling_job_check (GTask        *task,
           boundary.byte_offset = p - text;
           boundary.offset = i;
 
-          find_word_end (&p, &i, attrs, attrslen-1, self->extra_word_chars);
+          /* Ensure we've moved at least one character as find_word_end() may stop
+           * on the current character it is on.
+           */
+          if (p == before)
+            {
+              p = g_utf8_next_char (p);
+              i++;
+            }
+
+          if (!find_word_end (&p, &i, attrs, attrslen-1, self->extra_word_chars))
+            break;
 
           boundary.length = i - boundary.offset;
           boundary.byte_length = p - text - boundary.byte_offset;
