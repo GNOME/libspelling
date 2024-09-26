@@ -1,3 +1,13 @@
+libspelling 0.4.1
+=================
+
+This is a bug-fix release for GNOME 47
+
+ * Fixes an important issue tracking weak pointers from a GtkTextBuffer.
+ * Fixes an important issue where we could get invalid text iters from
+   GtkTextBuffer::delete-range() after the deletion occurred when other
+   signal handlers are in play.
+
 libspelling 0.4.0
 =================
 
