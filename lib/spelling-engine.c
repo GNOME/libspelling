@@ -312,11 +312,10 @@ spelling_engine_tick (gpointer data)
   g_assert (SPELLING_IS_ENGINE (self));
   g_assert (self->active == NULL);
 
-  dictionary = self->adapter.get_dictionary (self->instance);
-  language = self->adapter.get_language (self->instance);
-
-  /* Be safe against bad dictionary installations */
-  if (dictionary == NULL || language == NULL)
+  /* Be safe against weak-pointer lost or bad dictionary installations */
+  if (self->instance == NULL ||
+      !(dictionary = self->adapter.get_dictionary (self->instance)) ||
+      !(language = self->adapter.get_language (self->instance)))
     {
       g_clear_handle_id (&self->queued_update_handler, g_source_remove);
       return G_SOURCE_REMOVE;

@@ -646,6 +646,10 @@ spelling_text_buffer_adapter_cursor_moved_cb (gpointer data)
 
   self->queued_cursor_moved = 0;
 
+  /* Protect against weak-pointer lost */
+  if (self->buffer == NULL)
+    return G_SOURCE_REMOVE;
+
   enabled = spelling_text_buffer_adapter_get_enabled (self);
 
   /* Invalidate the old position */
