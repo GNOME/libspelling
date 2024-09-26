@@ -57,6 +57,8 @@ struct _SpellingTextBufferAdapter
   GtkTextMark     *insert_mark;
   GtkTextTag      *tag;
 
+  guint            commit_handler;
+
   guint            cursor_position;
   guint            incoming_cursor_position;
   guint            queued_cursor_moved;
@@ -96,6 +98,28 @@ enum {
 };
 
 static GParamSpec *properties[N_PROPS];
+
+static void
+spelling_text_buffer_adapter_commit_notify (GtkTextBuffer            *buffer,
+                                            GtkTextBufferNotifyFlags  flags,
+                                            guint                     position,
+                                            guint                     length,
+                                            gpointer                  user_data)
+{
+  SpellingTextBufferAdapter *self = user_data;
+
+  g_assert (GTK_IS_TEXT_BUFFER (buffer));
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+
+  if (flags == GTK_TEXT_BUFFER_NOTIFY_BEFORE_INSERT)
+    spelling_engine_before_insert_text (self->engine, position, length);
+  else if (flags == GTK_TEXT_BUFFER_NOTIFY_AFTER_INSERT)
+    spelling_engine_after_insert_text (self->engine, position, length);
+  else if (flags == GTK_TEXT_BUFFER_NOTIFY_BEFORE_DELETE)
+    spelling_engine_before_delete_range (self->engine, position, length);
+  else if (flags == GTK_TEXT_BUFFER_NOTIFY_AFTER_DELETE)
+    spelling_engine_after_delete_range (self->engine, position);
+}
 
 static gboolean
 spelling_text_buffer_adapter_check_enabled (gpointer instance)
@@ -520,6 +544,15 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
 
   self->insert_mark = gtk_text_buffer_get_insert (GTK_TEXT_BUFFER (buffer));
 
+  self->commit_handler =
+    gtk_text_buffer_add_commit_notify (GTK_TEXT_BUFFER (buffer),
+                                       (GTK_TEXT_BUFFER_NOTIFY_BEFORE_INSERT |
+                                        GTK_TEXT_BUFFER_NOTIFY_AFTER_INSERT |
+                                        GTK_TEXT_BUFFER_NOTIFY_BEFORE_DELETE |
+                                        GTK_TEXT_BUFFER_NOTIFY_AFTER_DELETE),
+                                       spelling_text_buffer_adapter_commit_notify,
+                                       self, NULL);
+
   g_signal_group_set_target (self->buffer_signals, buffer);
 
   gtk_text_buffer_get_bounds (GTK_TEXT_BUFFER (buffer), &begin, &end);
@@ -527,8 +560,11 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
   offset = gtk_text_iter_get_offset (&begin);
   length = gtk_text_iter_get_offset (&end) - offset;
 
-  spelling_engine_before_insert_text (self->engine, offset, length);
-  spelling_engine_after_insert_text (self->engine, offset, length);
+  if (length > 0)
+    {
+      spelling_engine_before_insert_text (self->engine, offset, length);
+      spelling_engine_after_insert_text (self->engine, offset, length);
+    }
 
   self->tag = gtk_text_buffer_create_tag (GTK_TEXT_BUFFER (buffer), NULL,
                                           "underline", PANGO_UNDERLINE_ERROR,
@@ -672,90 +708,6 @@ spelling_text_buffer_adapter_cursor_moved_cb (gpointer data)
 }
 
 static void
-spelling_text_buffer_adapter_before_insert_text (SpellingTextBufferAdapter *self,
-                                                 const GtkTextIter         *iter,
-                                                 const char                *text,
-                                                 int                        len,
-                                                 GtkTextBuffer             *buffer)
-{
-  guint offset;
-  guint length;
-
-  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
-  g_assert (GTK_IS_TEXT_BUFFER (buffer));
-
-  offset = gtk_text_iter_get_offset (iter);
-  length = g_utf8_strlen (text, len);
-
-  spelling_engine_before_insert_text (self->engine, offset, length);
-}
-
-
-static void
-spelling_text_buffer_adapter_after_insert_text (SpellingTextBufferAdapter *self,
-                                                const GtkTextIter         *iter,
-                                                const char                *text,
-                                                int                        len,
-                                                GtkTextBuffer             *buffer)
-{
-  guint offset;
-  guint length;
-
-  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
-  g_assert (GTK_IS_TEXT_BUFFER (buffer));
-
-  offset = gtk_text_iter_get_offset (iter);
-  length = g_utf8_strlen (text, len);
-
-  g_assert (offset >= length);
-
-  spelling_engine_after_insert_text (self->engine, offset - length, length);
-}
-
-static void
-spelling_text_buffer_adapter_before_delete_range (SpellingTextBufferAdapter *self,
-                                                  const GtkTextIter         *begin,
-                                                  const GtkTextIter         *end,
-                                                  GtkTextBuffer             *buffer)
-{
-  guint begin_offset;
-  guint end_offset;
-  guint length;
-
-  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
-  g_assert (GTK_IS_TEXT_BUFFER (buffer));
-
-  begin_offset = gtk_text_iter_get_offset (begin);
-  end_offset = gtk_text_iter_get_offset (end);
-
-  if (begin_offset > end_offset)
-    {
-      guint tmp = begin_offset;
-      begin_offset = end_offset;
-      end_offset = tmp;
-    }
-
-  length = end_offset - begin_offset;
-
-  g_assert (length > 0);
-
-  spelling_engine_before_delete_range (self->engine, begin_offset, length);
-}
-
-static void
-spelling_text_buffer_adapter_after_delete_range (SpellingTextBufferAdapter *self,
-                                                 const GtkTextIter         *begin,
-                                                 const GtkTextIter         *end,
-                                                 GtkTextBuffer             *buffer)
-{
-  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
-  g_assert (GTK_IS_TEXT_BUFFER (buffer));
-
-  spelling_engine_after_delete_range (self->engine,
-                                      gtk_text_iter_get_offset (begin));
-}
-
-static void
 spelling_text_buffer_adapter_cursor_moved (SpellingTextBufferAdapter *self,
                                            GtkSourceBuffer           *buffer)
 {
@@ -813,8 +765,15 @@ spelling_text_buffer_adapter_dispose (GObject *object)
 {
   SpellingTextBufferAdapter *self = (SpellingTextBufferAdapter *)object;
 
+  if (self->buffer != NULL)
+    {
+      gtk_text_buffer_remove_commit_notify (GTK_TEXT_BUFFER (self->buffer),
+                                            self->commit_handler);
+      self->commit_handler = 0;
+      g_clear_weak_pointer (&self->buffer);
+    }
+
   g_signal_group_set_target (self->buffer_signals, NULL);
-  g_clear_weak_pointer (&self->buffer);
   g_clear_object (&self->engine);
   g_clear_object (&self->menu);
   g_clear_object (&self->top_menu);
@@ -946,26 +905,7 @@ spelling_text_buffer_adapter_init (SpellingTextBufferAdapter *self)
                                                  g_variant_new_boolean (TRUE));
 
   self->buffer_signals = g_signal_group_new (GTK_SOURCE_TYPE_BUFFER);
-  g_signal_group_connect_object (self->buffer_signals,
-                                 "insert-text",
-                                 G_CALLBACK (spelling_text_buffer_adapter_before_insert_text),
-                                 self,
-                                 G_CONNECT_SWAPPED);
-  g_signal_group_connect_object (self->buffer_signals,
-                                 "insert-text",
-                                 G_CALLBACK (spelling_text_buffer_adapter_after_insert_text),
-                                 self,
-                                 G_CONNECT_SWAPPED | G_CONNECT_AFTER);
-  g_signal_group_connect_object (self->buffer_signals,
-                                 "delete-range",
-                                 G_CALLBACK (spelling_text_buffer_adapter_before_delete_range),
-                                 self,
-                                 G_CONNECT_SWAPPED);
-  g_signal_group_connect_object (self->buffer_signals,
-                                 "delete-range",
-                                 G_CALLBACK (spelling_text_buffer_adapter_after_delete_range),
-                                 self,
-                                 G_CONNECT_SWAPPED | G_CONNECT_AFTER);
+
   g_signal_group_connect_object (self->buffer_signals,
                                  "cursor-moved",
                                  G_CALLBACK (spelling_text_buffer_adapter_cursor_moved),
