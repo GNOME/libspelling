@@ -25,6 +25,8 @@
 
 #include "spelling-enchant-dictionary.h"
 
+#define MAX_RESULTS 10
+
 struct _SpellingEnchantDictionary
 {
   SpellingDictionary parent_instance;
@@ -93,6 +95,20 @@ spelling_enchant_dictionary_contains_word (SpellingDictionary *dictionary,
 }
 
 static char **
+strv_copy_n (const char * const *strv,
+             gsize               n)
+{
+  char **copy = g_new (char *, n + 1);
+
+  for (gsize i = 0; i < n; i++)
+    copy[i] = g_strdup (strv[i]);
+
+  copy[n] = NULL;
+
+  return copy;
+}
+
+static char **
 spelling_enchant_dictionary_list_corrections (SpellingDictionary *dictionary,
                                               const char         *word,
                                               gssize              word_len)
@@ -108,7 +124,11 @@ spelling_enchant_dictionary_list_corrections (SpellingDictionary *dictionary,
 
   if ((tmp = enchant_dict_suggest (self->native, word, word_len, &count)) && count > 0)
     {
-      ret = g_strdupv (tmp);
+      if (g_strv_length (tmp) <= MAX_RESULTS)
+        ret = g_strdupv (tmp);
+      else
+        ret = strv_copy_n ((const char * const *)tmp, MAX_RESULTS);
+
       enchant_dict_free_string_list (self->native, tmp);
     }
 
