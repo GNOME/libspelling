@@ -604,39 +604,6 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
                            G_CONNECT_SWAPPED);
 }
 
-/**
- * spelling_text_buffer_adapter_set_enabled:
- * @self: a `SpellingTextBufferAdapter`
- * @enabled: whether the spellcheck is enabled
- *
- * If %TRUE spellcheck is enabled.
- */
-void
-spelling_text_buffer_adapter_set_enabled (SpellingTextBufferAdapter *self,
-                                          gboolean                   enabled)
-{
-  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
-
-  enabled = !!enabled;
-
-  if (enabled != self->enabled)
-    {
-      self->enabled = enabled;
-      spelling_text_buffer_adapter_set_action_state (self,
-                                                     "enabled",
-                                                     g_variant_new_boolean (enabled));
-
-      if (!enabled)
-        {
-          spelling_text_buffer_adapter_set_action_enabled (self, "add", FALSE);
-          spelling_text_buffer_adapter_set_action_enabled (self, "ignore", FALSE);
-        }
-
-      g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ENABLED]);
-      spelling_engine_invalidate_all (self->engine);
-    }
-}
-
 static void
 remember_word_under_cursor (SpellingTextBufferAdapter *self)
 {
@@ -676,6 +643,46 @@ cleanup:
 
   if (self->menu)
     spelling_menu_set_corrections (self->menu, word, (const char * const *)corrections);
+}
+
+/**
+ * spelling_text_buffer_adapter_set_enabled:
+ * @self: a `SpellingTextBufferAdapter`
+ * @enabled: whether the spellcheck is enabled
+ *
+ * If %TRUE spellcheck is enabled.
+ */
+void
+spelling_text_buffer_adapter_set_enabled (SpellingTextBufferAdapter *self,
+                                          gboolean                   enabled)
+{
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+
+  enabled = !!enabled;
+
+  if (enabled != self->enabled)
+    {
+      self->enabled = enabled;
+      spelling_text_buffer_adapter_set_action_state (self,
+                                                     "enabled",
+                                                     g_variant_new_boolean (enabled));
+
+      if (!enabled)
+        {
+          spelling_text_buffer_adapter_set_action_enabled (self, "add", FALSE);
+          spelling_text_buffer_adapter_set_action_enabled (self, "ignore", FALSE);
+
+          if (self->menu)
+            spelling_menu_set_corrections (self->menu, NULL, NULL);
+        }
+      else
+        {
+          remember_word_under_cursor (self);
+        }
+
+      g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ENABLED]);
+      spelling_engine_invalidate_all (self->engine);
+    }
 }
 
 static gboolean
@@ -1234,6 +1241,9 @@ void
 spelling_text_buffer_adapter_update_corrections (SpellingTextBufferAdapter *self)
 {
   g_return_if_fail (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+
+  if (self->enabled == FALSE)
+    return;
 
   remember_word_under_cursor (self);
 }
