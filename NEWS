@@ -1,3 +1,13 @@
+libspelling 0.4.2
+=================
+
+This is a bug-fix release for GNOME 47
+
+ * Limit the number of corrections to 10 in enchant backend to help with
+   dictionary configurations which produce many results.
+ * Hide add/ignore menu items when disabled.
+ * Don't show word corrections when spellcheck is disabled.
+
 libspelling 0.4.1
 =================
 
