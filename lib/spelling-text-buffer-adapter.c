@@ -625,6 +625,13 @@ spelling_text_buffer_adapter_set_enabled (SpellingTextBufferAdapter *self,
       spelling_text_buffer_adapter_set_action_state (self,
                                                      "enabled",
                                                      g_variant_new_boolean (enabled));
+
+      if (!enabled)
+        {
+          spelling_text_buffer_adapter_set_action_enabled (self, "add", FALSE);
+          spelling_text_buffer_adapter_set_action_enabled (self, "ignore", FALSE);
+        }
+
       g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ENABLED]);
       spelling_engine_invalidate_all (self->engine);
     }
