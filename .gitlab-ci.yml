@@ -3,7 +3,7 @@ stages:
     - deploy
 
 variables:
-    FEDORA_IMAGE: "registry.fedoraproject.org/fedora:41'
+    FEDORA_IMAGE: "registry.fedoraproject.org/fedora:41"
 
 reference:
     image: $FEDORA_IMAGE
