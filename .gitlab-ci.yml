@@ -40,6 +40,7 @@ reference:
                 libdrm-devel
                 libglvnd-devel
                 glslc
+                mesa-vulkan-drivers
                 meson
                 ninja-build
                 redhat-rpm-config
@@ -47,6 +48,8 @@ reference:
                 vala
                 xorg-x11-server-Xvfb
                 vulkan-devel
+                vulkan-headers
+                vulkan-loader-devel
         - mkdir -p pfx/
         - meson ${MESON_FLAGS} --prefix=${PWD}/pfx _build
                 -Dwerror=false
