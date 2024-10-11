@@ -147,6 +147,7 @@ add_project_link_arguments(global_link_args, language: 'c')
 configure_file(output: 'config.h', configuration: config_h)
 
 subdir('lib')
+subdir('po')
 subdir('test')
 subdir('testsuite')
 
