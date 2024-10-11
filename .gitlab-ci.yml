@@ -21,6 +21,8 @@ reference:
                 gcc
                 gcc-c++
                 gettext
+                gi-docgen
+                gi-docgen-fonts
                 git
                 glib2-devel
                 gobject-introspection-devel
