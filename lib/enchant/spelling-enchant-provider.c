@@ -20,8 +20,6 @@
 
 #include "config.h"
 
-#include <glib/gi18n.h>
-
 #include <enchant.h>
 #include <locale.h>
 #include <unicode/uloc.h>
@@ -123,7 +121,7 @@ SpellingProvider *
 spelling_enchant_provider_new (void)
 {
   return g_object_new (SPELLING_TYPE_ENCHANT_PROVIDER,
-                       "display-name", _("Enchant 2"),
+                       "display-name", "Enchant",
                        NULL);
 }
 
