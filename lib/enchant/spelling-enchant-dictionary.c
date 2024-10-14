@@ -86,7 +86,7 @@ spelling_enchant_dictionary_contains_word (SpellingDictionary *dictionary,
 
   g_assert (SPELLING_IS_ENCHANT_DICTIONARY (self));
   g_assert (word != NULL);
-  g_assert (word_len > 0);
+  g_assert (word_len >= 0);
 
   if (word_is_number (word, word_len))
     return TRUE;
