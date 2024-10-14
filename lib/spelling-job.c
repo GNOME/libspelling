@@ -385,7 +385,8 @@ spelling_job_check (GTask        *task,
           boundary.length = i - boundary.offset;
           boundary.byte_length = p - text - boundary.byte_offset;
 
-          spelling_boundaries_append (&boundaries, &boundary);
+          if (boundary.byte_length > 0)
+            spelling_boundaries_append (&boundaries, &boundary);
         }
 
       if (g_atomic_int_get (&fragment->must_discard))
