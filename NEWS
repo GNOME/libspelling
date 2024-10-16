@@ -1,3 +1,13 @@
+libspelling 0.4.3
+=================
+
+This is a bug-fix release for GNOME 47
+
+ * Fix build to disable assertions in release builds
+ * Fix an off-by-one in assertion
+ * Add i18n for translations of menu entries
+ * Ignore empty strings when building job list
+
 libspelling 0.4.2
 =================
 
