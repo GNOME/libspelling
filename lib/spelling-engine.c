@@ -36,7 +36,7 @@ struct _SpellingEngine
 {
   GObject          parent_instance;
   CjhTextRegion   *region;
-  GObject         *instance;
+  GWeakRef         instance_wr;
   SpellingJob     *active;
   SpellingAdapter  adapter;
   guint            queued_update_handler;
@@ -45,6 +45,7 @@ struct _SpellingEngine
 typedef struct
 {
   SpellingEngine *self;
+  GObject        *instance;
   GtkBitset      *bitset;
   GtkBitset      *all;
   guint           size;
@@ -58,8 +59,10 @@ static void spelling_engine_queue_update (SpellingEngine *self,
 static gboolean
 spelling_engine_check_enabled (SpellingEngine *self)
 {
-  if (self->instance != NULL)
-    return self->adapter.check_enabled (self->instance);
+  g_autoptr(GObject) instance = g_weak_ref_get (&self->instance_wr);
+
+  if (instance != NULL)
+    return self->adapter.check_enabled (instance);
 
   return FALSE;
 }
@@ -87,25 +90,31 @@ spelling_engine_extend_range (SpellingEngine *self,
                               guint          *begin,
                               guint          *end)
 {
-  guint tmp;
+  g_autoptr(GObject) instance = NULL;
 
   g_assert (SPELLING_IS_ENGINE (self));
   g_assert (begin != NULL);
   g_assert (end != NULL);
 
-  tmp = *begin;
-  if (self->adapter.backward_word_start (self->instance, &tmp))
-    *begin = tmp;
+  if ((instance = g_weak_ref_get (&self->instance_wr)))
+    {
+      guint tmp;
 
-  tmp = *end;
-  if (self->adapter.forward_word_end (self->instance, &tmp))
-    *end = tmp;
+      tmp = *begin;
+      if (self->adapter.backward_word_start (instance, &tmp))
+        *begin = tmp;
+
+      tmp = *end;
+      if (self->adapter.forward_word_end (instance, &tmp))
+        *end = tmp;
+    }
 
   return *begin != *end;
 }
 
 static void
 spelling_engine_add_fragment (SpellingEngine *self,
+                              GObject        *instance,
                               SpellingJob    *job,
                               GtkBitset      *bitset,
                               guint           begin,
@@ -118,7 +127,7 @@ spelling_engine_add_fragment (SpellingEngine *self,
   g_assert (bitset != NULL);
   g_assert (end >= begin);
 
-  text = self->adapter.copy_text (self->instance, begin, end - begin + 1);
+  text = self->adapter.copy_text (instance, begin, end - begin + 1);
   bytes = g_bytes_new_take (text, strlen (text));
 
   spelling_job_add_fragment (job, bytes, begin, end - begin + 1);
@@ -126,6 +135,7 @@ spelling_engine_add_fragment (SpellingEngine *self,
 
 static void
 spelling_engine_add_fragments (SpellingEngine *self,
+                               GObject        *instance,
                                SpellingJob    *job,
                                GtkBitset      *bitset)
 {
@@ -145,7 +155,7 @@ spelling_engine_add_fragments (SpellingEngine *self,
         {
           if (pos != end + 1)
             {
-              spelling_engine_add_fragment (self, job, bitset, begin, end);
+              spelling_engine_add_fragment (self, instance, job, bitset, begin, end);
               begin = end = pos;
             }
           else
@@ -154,12 +164,13 @@ spelling_engine_add_fragments (SpellingEngine *self,
             }
         }
 
-      spelling_engine_add_fragment (self, job, bitset, begin, end);
+      spelling_engine_add_fragment (self, instance, job, bitset, begin, end);
     }
 }
 
 static gsize
 spelling_engine_add_range (SpellingEngine *self,
+                           GObject        *instance,
                            guint           begin,
                            guint           end,
                            GtkBitset      *all,
@@ -182,13 +193,13 @@ spelling_engine_add_range (SpellingEngine *self,
 
   /* Track what the adapter thinks should be in this run */
   gtk_bitset_add_range (bitset, begin, end - begin);
-  self->adapter.intersect_spellcheck_region (self->instance, bitset);
+  self->adapter.intersect_spellcheck_region (instance, bitset);
 
   /* And now subtract that from the all to cover the gaps */
   gtk_bitset_subtract (all, bitset);
 
   /* Add fragments for the sub-regions we need to check */
-  spelling_engine_add_fragments (self, self->active, bitset);
+  spelling_engine_add_fragments (self, instance, self->active, bitset);
 
   /* Track the size so we can bail after sufficent data to check */
   ret = gtk_bitset_get_size (bitset);
@@ -217,6 +228,7 @@ collect_ranges (gsize                   offset,
   spelling_engine_extend_range (collect->self, &begin, &end);
 
   collect->size += spelling_engine_add_range (collect->self,
+                                              collect->instance,
                                               begin, end,
                                               collect->all,
                                               collect->bitset);
@@ -230,6 +242,7 @@ spelling_engine_job_finished (GObject      *object,
                               gpointer      user_data)
 {
   SpellingJob *job = (SpellingJob *)object;
+  g_autoptr(GObject) instance = NULL;
   g_autoptr(SpellingEngine) self = user_data;
   g_autofree SpellingBoundary *fragments = NULL;
   g_autofree SpellingMistake *mistakes = NULL;
@@ -242,21 +255,24 @@ spelling_engine_job_finished (GObject      *object,
 
   g_clear_object (&self->active);
 
-  if (!spelling_engine_check_enabled (self))
+  if (!(instance = g_weak_ref_get (&self->instance_wr)))
+    return;
+
+  if (!self->adapter.check_enabled (instance))
     return;
 
   spelling_job_run_finish (job, result, &fragments, &n_fragments, &mistakes, &n_mistakes);
 
   for (guint f = 0; f < n_fragments; f++)
     {
-      self->adapter.clear_tag (self->instance, fragments[f].offset, fragments[f].length);
+      self->adapter.clear_tag (instance, fragments[f].offset, fragments[f].length);
       _cjh_text_region_replace (self->region,
                                 fragments[f].offset, fragments[f].length,
                                 TAG_CHECKED);
     }
 
   for (guint m = 0; m < n_mistakes; m++)
-    self->adapter.apply_tag (self->instance, mistakes[m].offset, mistakes[m].length);
+    self->adapter.apply_tag (instance, mistakes[m].offset, mistakes[m].length);
 
   /* Check immediately if there is more */
   if (spelling_engine_has_unchecked_regions (self))
@@ -302,6 +318,7 @@ spelling_engine_tick (gpointer data)
   SpellingEngine *self = data;
   g_autoptr(GtkBitset) bitset = NULL;
   g_autoptr(GtkBitset) all = NULL;
+  g_autoptr(GObject) instance = NULL;
   const CjhTextRegionRun *run;
   SpellingDictionary *dictionary;
   PangoLanguage *language;
@@ -313,9 +330,9 @@ spelling_engine_tick (gpointer data)
   g_assert (self->active == NULL);
 
   /* Be safe against weak-pointer lost or bad dictionary installations */
-  if (self->instance == NULL ||
-      !(dictionary = self->adapter.get_dictionary (self->instance)) ||
-      !(language = self->adapter.get_language (self->instance)))
+  if (!(instance = g_weak_ref_get (&self->instance_wr)) ||
+      !(dictionary = self->adapter.get_dictionary (instance)) ||
+      !(language = self->adapter.get_language (instance)))
     {
       g_clear_handle_id (&self->queued_update_handler, g_source_remove);
       return G_SOURCE_REMOVE;
@@ -327,7 +344,7 @@ spelling_engine_tick (gpointer data)
   all = gtk_bitset_new_empty ();
 
   /* Always check the cursor location so that spellcheck feels snappy */
-  cursor = self->adapter.get_cursor (self->instance);
+  cursor = self->adapter.get_cursor (instance);
   run = _cjh_text_region_get_run_at_offset (self->region, cursor, &real_offset);
 
   if (run == NULL || run->data == TAG_NEEDS_CHECK)
@@ -336,13 +353,14 @@ spelling_engine_tick (gpointer data)
       guint end = cursor;
 
       if (spelling_engine_extend_range (self, &begin, &end))
-        spelling_engine_add_range (self, begin, end, all, bitset);
+        spelling_engine_add_range (self, instance, begin, end, all, bitset);
     }
 
   collect.self = self;
   collect.bitset = bitset;
   collect.all = all;
   collect.size = 0;
+  collect.instance = instance;
 
   _cjh_text_region_foreach (self->region, collect_ranges, &collect);
 
@@ -413,7 +431,7 @@ spelling_engine_dispose (GObject *object)
 
   g_clear_object (&self->active);
   g_clear_handle_id (&self->queued_update_handler, g_source_remove);
-  g_clear_weak_pointer (&self->instance);
+  g_weak_ref_clear (&self->instance_wr);
 
   G_OBJECT_CLASS (spelling_engine_parent_class)->dispose (object);
 }
@@ -429,6 +447,8 @@ spelling_engine_class_init (SpellingEngineClass *klass)
 static void
 spelling_engine_init (SpellingEngine *self)
 {
+  g_weak_ref_init (&self->instance_wr, NULL);
+
   self->region = _cjh_text_region_new (spelling_engine_join_range,
                                        spelling_engine_split_range);
 }
@@ -443,7 +463,7 @@ spelling_engine_new (const SpellingAdapter *adapter,
   g_return_val_if_fail (G_IS_OBJECT (instance), NULL);
 
   self = g_object_new (SPELLING_TYPE_ENGINE, NULL);
-  g_set_weak_pointer (&self->instance, instance);
+  g_weak_ref_set (&self->instance_wr, instance);
   self->adapter = *adapter;
 
   return self;
@@ -455,7 +475,6 @@ spelling_engine_before_insert_text (SpellingEngine *self,
                                     guint           length)
 {
   g_return_if_fail (SPELLING_IS_ENGINE (self));
-  g_return_if_fail (self->instance != NULL);
 
   if (length == 0)
     return;
@@ -472,7 +491,6 @@ spelling_engine_after_insert_text (SpellingEngine *self,
                                    guint           length)
 {
   g_return_if_fail (SPELLING_IS_ENGINE (self));
-  g_return_if_fail (self->instance != NULL);
 
   if (length == 0)
     return;
@@ -486,7 +504,6 @@ spelling_engine_before_delete_range (SpellingEngine *self,
                                      guint           length)
 {
   g_return_if_fail (SPELLING_IS_ENGINE (self));
-  g_return_if_fail (self->instance != NULL);
 
   if (length == 0)
     return;
@@ -502,7 +519,6 @@ spelling_engine_after_delete_range (SpellingEngine *self,
                                     guint           position)
 {
   g_return_if_fail (SPELLING_IS_ENGINE (self));
-  g_return_if_fail (self->instance != NULL);
 
   spelling_engine_invalidate (self, position, 0);
 }
@@ -519,6 +535,7 @@ spelling_engine_iteration (SpellingEngine *self)
 void
 spelling_engine_invalidate_all (SpellingEngine *self)
 {
+  g_autoptr(GObject) instance = NULL;
   guint length;
 
   g_return_if_fail (SPELLING_IS_ENGINE (self));
@@ -531,7 +548,9 @@ spelling_engine_invalidate_all (SpellingEngine *self)
   if (length > 0)
     {
       _cjh_text_region_replace (self->region, 0, length, TAG_NEEDS_CHECK);
-      self->adapter.clear_tag (self->instance, 0, length);
+
+      if ((instance = g_weak_ref_get (&self->instance_wr)))
+        self->adapter.clear_tag (instance, 0, length);
     }
 
   spelling_engine_queue_update (self, 0);
@@ -542,15 +561,17 @@ spelling_engine_invalidate (SpellingEngine *self,
                             guint           position,
                             guint           length)
 {
+  g_autoptr(GObject) instance = NULL;
+
   g_assert (SPELLING_IS_ENGINE (self));
-  g_assert (self->instance != NULL);
 
   if (self->active)
     spelling_job_invalidate (self->active, position, length);
 
   _cjh_text_region_replace (self->region, position, length, TAG_NEEDS_CHECK);
 
-  self->adapter.clear_tag (self->instance, position, length);
+  if ((instance = g_weak_ref_get (&self->instance_wr)))
+    self->adapter.clear_tag (instance, position, length);
 
   spelling_engine_queue_update (self, 0);
 }
