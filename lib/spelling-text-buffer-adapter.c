@@ -46,7 +46,7 @@ struct _SpellingTextBufferAdapter
 
   SpellingEngine  *engine;
   GSignalGroup    *buffer_signals;
-  GtkSourceBuffer *buffer;
+  GWeakRef         buffer_wr;
   SpellingChecker *checker;
   GtkTextTag      *no_spell_check_tag;
   GMenuModel      *menu;
@@ -125,12 +125,13 @@ static gboolean
 spelling_text_buffer_adapter_check_enabled (gpointer instance)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
 
-  if (self->buffer == NULL)
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
     return FALSE;
 
 #if GTK_SOURCE_CHECK_VERSION(5, 9, 0)
-  if (gtk_source_buffer_get_loading (self->buffer))
+  if (gtk_source_buffer_get_loading (GTK_SOURCE_BUFFER (buffer)))
     return FALSE;
 #endif
 
@@ -141,11 +142,13 @@ static guint
 spelling_text_buffer_adapter_get_cursor (gpointer instance)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   GtkTextIter iter;
 
-  gtk_text_buffer_get_iter_at_mark (GTK_TEXT_BUFFER (self->buffer),
-                                    &iter,
-                                    self->insert_mark);
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    return 0;
+
+  gtk_text_buffer_get_iter_at_mark (buffer, &iter, self->insert_mark);
 
   return gtk_text_iter_get_offset (&iter);
 }
@@ -156,11 +159,18 @@ spelling_text_buffer_adapter_copy_text (gpointer instance,
                                         guint    length)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   GtkTextIter begin;
   GtkTextIter end;
 
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &begin, position);
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &end, position + length);
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    {
+      g_warn_if_reached ();
+      return g_new0 (char, length + 1);
+    }
+
+  gtk_text_buffer_get_iter_at_offset (buffer, &begin, position);
+  gtk_text_buffer_get_iter_at_offset (buffer, &end, position + length);
 
   return gtk_text_iter_get_slice (&begin, &end);
 }
@@ -171,6 +181,7 @@ spelling_text_buffer_adapter_apply_tag (gpointer instance,
                                         guint    length)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   GtkTextIter begin;
   GtkTextIter end;
 
@@ -185,9 +196,12 @@ spelling_text_buffer_adapter_apply_tag (gpointer instance,
       position + length >= self->cursor_position)
     return;
 
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &begin, position);
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &end, position + length);
-  gtk_text_buffer_apply_tag (GTK_TEXT_BUFFER (self->buffer), self->tag, &begin, &end);
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    return;
+
+  gtk_text_buffer_get_iter_at_offset (buffer, &begin, position);
+  gtk_text_buffer_get_iter_at_offset (buffer, &end, position + length);
+  gtk_text_buffer_apply_tag (buffer, self->tag, &begin, &end);
 }
 
 static void
@@ -196,15 +210,19 @@ spelling_text_buffer_adapter_clear_tag (gpointer instance,
                                         guint    length)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   GtkTextIter begin;
   GtkTextIter end;
 
   if (self->tag == NULL)
     return;
 
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &begin, position);
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &end, position + length);
-  gtk_text_buffer_remove_tag (GTK_TEXT_BUFFER (self->buffer), self->tag, &begin, &end);
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    return;
+
+  gtk_text_buffer_get_iter_at_offset (buffer, &begin, position);
+  gtk_text_buffer_get_iter_at_offset (buffer, &end, position + length);
+  gtk_text_buffer_remove_tag (buffer, self->tag, &begin, &end);
 }
 
 static gboolean
@@ -212,6 +230,7 @@ spelling_text_buffer_adapter_backward_word_start (gpointer  instance,
                                                   guint    *position)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   const char *extra_word_chars = NULL;
   GtkTextIter iter;
   guint prev = *position;
@@ -219,7 +238,10 @@ spelling_text_buffer_adapter_backward_word_start (gpointer  instance,
   if (self->checker != NULL)
     extra_word_chars = spelling_checker_get_extra_word_chars (self->checker);
 
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &iter, *position);
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    return FALSE;
+
+  gtk_text_buffer_get_iter_at_offset (buffer, &iter, *position);
 
   spelling_iter_backward_word_start (&iter, extra_word_chars);
 
@@ -233,6 +255,7 @@ spelling_text_buffer_adapter_forward_word_end (gpointer  instance,
                                                guint    *position)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   const char *extra_word_chars = NULL;
   GtkTextIter iter;
   guint prev = *position;
@@ -240,7 +263,10 @@ spelling_text_buffer_adapter_forward_word_end (gpointer  instance,
   if (self->checker != NULL)
     extra_word_chars = spelling_checker_get_extra_word_chars (self->checker);
 
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), &iter, *position);
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    return FALSE;
+
+  gtk_text_buffer_get_iter_at_offset (buffer, &iter, *position);
 
   spelling_iter_forward_word_end (&iter, extra_word_chars);
 
@@ -270,6 +296,7 @@ spelling_text_buffer_adapter_intersect_spellcheck_region (gpointer   instance,
                                                           GtkBitset *region)
 {
   SpellingTextBufferAdapter *self = instance;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   GtkTextIter begin;
   GtkTextIter end;
   GtkTextIter iter;
@@ -279,10 +306,13 @@ spelling_text_buffer_adapter_intersect_spellcheck_region (gpointer   instance,
   if (self->no_spell_check_tag == NULL || gtk_bitset_is_empty (region))
     return;
 
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer),
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    return;
+
+  gtk_text_buffer_get_iter_at_offset (buffer,
                                       &begin,
                                       gtk_bitset_get_minimum (region));
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer),
+  gtk_text_buffer_get_iter_at_offset (buffer,
                                       &end,
                                       gtk_bitset_get_maximum (region));
 
@@ -373,7 +403,14 @@ get_word_at_position (SpellingTextBufferAdapter *self,
                       GtkTextIter               *begin,
                       GtkTextIter               *end)
 {
-  gtk_text_buffer_get_iter_at_offset (GTK_TEXT_BUFFER (self->buffer), begin, position);
+  g_autoptr(GtkTextBuffer) buffer = NULL;
+
+  g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
+
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    return FALSE;
+
+  gtk_text_buffer_get_iter_at_offset (buffer, begin, position);
   *end = *begin;
 
   if (gtk_text_iter_ends_word (end))
@@ -538,9 +575,8 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
 
   g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
   g_assert (GTK_SOURCE_IS_BUFFER (buffer));
-  g_assert (self->buffer == NULL);
 
-  g_set_weak_pointer (&self->buffer, buffer);
+  g_weak_ref_set (&self->buffer_wr, buffer);
 
   self->insert_mark = gtk_text_buffer_get_insert (GTK_TEXT_BUFFER (buffer));
 
@@ -608,8 +644,8 @@ static void
 remember_word_under_cursor (SpellingTextBufferAdapter *self)
 {
   g_autofree char *word = NULL;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   g_auto(GStrv) corrections = NULL;
-  GtkTextBuffer *buffer;
   GtkTextMark *insert;
   GtkTextIter iter, begin, end;
 
@@ -617,10 +653,12 @@ remember_word_under_cursor (SpellingTextBufferAdapter *self)
 
   g_clear_pointer (&self->word_under_cursor, g_free);
 
-  if (self->buffer == NULL || self->checker == NULL)
+  if (self->checker == NULL)
     goto cleanup;
 
-  buffer = GTK_TEXT_BUFFER (self->buffer);
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
+    goto cleanup;
+
   insert = gtk_text_buffer_get_insert (buffer);
 
   gtk_text_buffer_get_iter_at_mark (buffer, &iter, insert);
@@ -689,6 +727,7 @@ static gboolean
 spelling_text_buffer_adapter_cursor_moved_cb (gpointer data)
 {
   SpellingTextBufferAdapter *self = data;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   GtkTextIter begin, end;
   gboolean enabled;
 
@@ -697,7 +736,7 @@ spelling_text_buffer_adapter_cursor_moved_cb (gpointer data)
   self->queued_cursor_moved = 0;
 
   /* Protect against weak-pointer lost */
-  if (self->buffer == NULL)
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
     return G_SOURCE_REMOVE;
 
   enabled = spelling_text_buffer_adapter_get_enabled (self);
@@ -770,6 +809,7 @@ spelling_text_buffer_adapter_finalize (GObject *object)
   g_clear_object (&self->checker);
   g_clear_object (&self->no_spell_check_tag);
   g_clear_object (&self->buffer_signals);
+  g_weak_ref_clear (&self->buffer_wr);
 
   G_OBJECT_CLASS (spelling_text_buffer_adapter_parent_class)->finalize (object);
 }
@@ -778,13 +818,13 @@ static void
 spelling_text_buffer_adapter_dispose (GObject *object)
 {
   SpellingTextBufferAdapter *self = (SpellingTextBufferAdapter *)object;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
 
-  if (self->buffer != NULL)
+  if ((buffer = g_weak_ref_get (&self->buffer_wr)))
     {
-      gtk_text_buffer_remove_commit_notify (GTK_TEXT_BUFFER (self->buffer),
-                                            self->commit_handler);
+      gtk_text_buffer_remove_commit_notify (buffer, self->commit_handler);
       self->commit_handler = 0;
-      g_clear_weak_pointer (&self->buffer);
+      g_weak_ref_set (&self->buffer_wr, NULL);
     }
 
   g_signal_group_set_target (self->buffer_signals, NULL);
@@ -806,7 +846,7 @@ spelling_text_buffer_adapter_get_property (GObject    *object,
   switch (prop_id)
     {
     case PROP_BUFFER:
-      g_value_set_object (value, self->buffer);
+      g_value_take_object (value, g_weak_ref_get (&self->buffer_wr));
       break;
 
     case PROP_CHECKER:
@@ -913,6 +953,8 @@ spelling_text_buffer_adapter_class_init (SpellingTextBufferAdapterClass *klass)
 static void
 spelling_text_buffer_adapter_init (SpellingTextBufferAdapter *self)
 {
+  g_weak_ref_init (&self->buffer_wr, NULL);
+
   self->enabled = TRUE;
   spelling_text_buffer_adapter_set_action_state (self,
                                                  "enabled",
@@ -1025,9 +1067,14 @@ spelling_text_buffer_adapter_set_checker (SpellingTextBufferAdapter *self,
 GtkSourceBuffer *
 spelling_text_buffer_adapter_get_buffer (SpellingTextBufferAdapter *self)
 {
+  g_autoptr(GtkTextBuffer) buffer = NULL;
+
   g_return_val_if_fail (SPELLING_IS_TEXT_BUFFER_ADAPTER (self), NULL);
 
-  return self->buffer;
+  buffer = g_weak_ref_get (&self->buffer_wr);
+
+  /* return borrowed instance only */
+  return GTK_SOURCE_BUFFER (buffer);
 }
 
 /**
@@ -1178,17 +1225,16 @@ spelling_correct_action (SpellingTextBufferAdapter *self,
                          GVariant                  *param)
 {
   g_autofree char *slice = NULL;
-  GtkTextBuffer *buffer;
+  g_autoptr(GtkTextBuffer) buffer = NULL;
   const char *word;
   GtkTextIter begin, end;
 
   g_assert (SPELLING_IS_TEXT_BUFFER_ADAPTER (self));
   g_assert (g_variant_is_of_type (param, G_VARIANT_TYPE_STRING));
 
-  if (self->buffer == NULL)
+  if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
     return;
 
-  buffer = GTK_TEXT_BUFFER (self->buffer);
   word = g_variant_get_string (param, NULL);
 
   /* We don't deal with selections (yet?) */
