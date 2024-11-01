@@ -86,7 +86,7 @@ get_display_name (const char *code)
       UChar ret[256];
       UErrorCode status = U_ZERO_ERROR;
       uloc_getDisplayName (code, names[i], ret, G_N_ELEMENTS (ret), &status);
-      if (status == U_ZERO_ERROR)
+      if (U_SUCCESS (status))
         return _icu_uchar_to_char (ret, G_N_ELEMENTS (ret));
     }
 
@@ -103,7 +103,7 @@ get_display_language (const char *code)
       UChar ret[256];
       UErrorCode status = U_ZERO_ERROR;
       uloc_getDisplayLanguage (code, names[i], ret, G_N_ELEMENTS (ret), &status);
-      if (status == U_ZERO_ERROR)
+      if (U_SUCCESS (status))
         return _icu_uchar_to_char (ret, G_N_ELEMENTS (ret));
     }
 
