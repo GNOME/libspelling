@@ -55,6 +55,8 @@ static GParamSpec *properties[N_PROPS];
 
 /**
  * spelling_checker_new:
+ * @provider: (nullable): the `SpellingProvider` to use, or %NULL for the default one
+ * @language: (nullable): the language to use, or %NULL for the default one
  *
  * Create a new `SpellingChecker`.
  *
