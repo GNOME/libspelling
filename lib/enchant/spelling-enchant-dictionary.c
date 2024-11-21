@@ -264,6 +264,11 @@ spelling_enchant_dictionary_finalize (GObject *object)
   /* Owned by provider */
   self->native = NULL;
 
+  /* Global, no need to free */
+  self->language = NULL;
+
+  g_clear_pointer (&self->extra_word_chars, g_free);
+
   G_OBJECT_CLASS (spelling_enchant_dictionary_parent_class)->finalize (object);
 }
 
