@@ -25,7 +25,7 @@ spelling_text_buffer_adapter_set_enabled (adapter, TRUE);
 
 ### In Python
 
-```
+```python
 from gi.repository import Spelling
 
 checker = Spelling.Checker.get_default()
@@ -40,7 +40,7 @@ adapter.set_enabled(True)
 
 ### In JavaScript
 
-```
+```js
 const Spelling = imports.gi.Spelling;
 
 let checker = Spelling.Checker.get_default()
