@@ -54,7 +54,7 @@ static GParamSpec *properties [N_PROPS];
  */
 SpellingDictionary *
 spelling_enchant_dictionary_new (const char *code,
-                               gpointer    native)
+                                 gpointer    native)
 {
   return g_object_new (SPELLING_TYPE_ENCHANT_DICTIONARY,
                        "code", code,
@@ -269,9 +269,9 @@ spelling_enchant_dictionary_finalize (GObject *object)
 
 static void
 spelling_enchant_dictionary_get_property (GObject    *object,
-                                        guint       prop_id,
-                                        GValue     *value,
-                                        GParamSpec *pspec)
+                                          guint       prop_id,
+                                          GValue     *value,
+                                          GParamSpec *pspec)
 {
   SpellingEnchantDictionary *self = SPELLING_ENCHANT_DICTIONARY (object);
 
@@ -288,9 +288,9 @@ spelling_enchant_dictionary_get_property (GObject    *object,
 
 static void
 spelling_enchant_dictionary_set_property (GObject      *object,
-                                        guint         prop_id,
-                                        const GValue *value,
-                                        GParamSpec   *pspec)
+                                          guint         prop_id,
+                                          const GValue *value,
+                                          GParamSpec   *pspec)
 {
   SpellingEnchantDictionary *self = SPELLING_ENCHANT_DICTIONARY (object);
 
