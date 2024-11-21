@@ -311,6 +311,9 @@ _spelling_dictionary_check_words (SpellingDictionary     *self,
 
   bitset = gtk_bitset_new_empty ();
 
+  if (n_positions == 0)
+    return bitset;
+
   contains_word = SPELLING_DICTIONARY_GET_CLASS (self)->contains_word;
 
   spelling_dictionary_lock (self);
