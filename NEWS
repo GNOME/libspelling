@@ -1,3 +1,15 @@
+libspelling 0.4.5
+=================
+
+This is a bug-fix release for GNOME 47
+
+ * Various robustness fixes for weak ref tracking
+ * Various GObject Introspection fixes
+ * A new build option to install a static library (libspelling-1.a)
+ * Fix a minor leak of extra_word_chars for a language dictionary
+ * Fix ICU success check
+ * Translation updates
+
 libspelling 0.4.4
 =================
 
