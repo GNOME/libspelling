@@ -67,6 +67,7 @@ libspelling_static = static_library( 'spelling-' + api_version, libspelling_sour
   gnu_symbol_visibility: 'hidden',
                  c_args: ['-DLIBSPELLING_COMPILATION'],
     include_directories: [include_directories('..'), include_directories('.')],
+                install: get_option('install-static'),
 )
 
 libspelling_static_dep = declare_dependency(
