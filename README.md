@@ -58,7 +58,7 @@ adapter.set_enabled(true)
 Add the [bindings dependency](https://crates.io/crates/libspelling) to your Cargo.toml
 
 ```rust
-let checker = libspelling:::Checker::default();
+let checker = libspelling::Checker::default();
 let adapter = libspelling::TextBufferAdapter::new(&buffer, &checker);
 let extra_menu = adapter.menu_model();
 
