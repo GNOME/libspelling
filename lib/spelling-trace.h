@@ -36,14 +36,11 @@ G_BEGIN_DECLS
 # define SPELLING_PROFILER_ENABLED 1
 # define SPELLING_PROFILER_CURRENT_TIME SYSPROF_CAPTURE_CURRENT_TIME
 # define SPELLING_PROFILER_ACTIVE (sysprof_collector_is_active())
-# define SPELLING_PROFILER_BEGIN_MARK \
-  G_STMT_START { \
-    gint64 __begin_time = SYSPROF_CAPTURE_CURRENT_TIME;
+# define SPELLING_PROFILER_BEGIN_MARK gint64 __begin_time = SYSPROF_CAPTURE_CURRENT_TIME
 # define SPELLING_PROFILER_END_MARK(name, message) \
-    G_STMT_START { \
-      gint64 __duration = SYSPROF_CAPTURE_CURRENT_TIME - __begin_time; \
-      sysprof_collector_mark (__begin_time, __duration, "Spelling", name, message); \
-    } G_STMT_END; \
+  G_STMT_START { \
+    gint64 __duration = SYSPROF_CAPTURE_CURRENT_TIME - __begin_time; \
+    sysprof_collector_mark (__begin_time, __duration, "Spelling", name, message); \
   } G_STMT_END
 # define SPELLING_PROFILER_MARK(duration, name, message) \
   G_STMT_START { \
@@ -59,11 +56,10 @@ G_BEGIN_DECLS
 # undef SPELLING_PROFILER_ENABLED
 # define SPELLING_PROFILER_ACTIVE (0)
 # define SPELLING_PROFILER_CURRENT_TIME 0
-# define SPELLING_PROFILER_MARK(duration, name, message) \
-  G_STMT_START { } G_STMT_END
-# define SPELLING_PROFILER_BEGIN_MARK G_STMT_START {
-# define SPELLING_PROFILER_END_MARK(name, message) (void)0; } G_STMT_END
-# define SPELLING_PROFILER_LOG(format, ...) G_STMT_START { } G_STMT_END
+# define SPELLING_PROFILER_MARK(duration, name, message) G_STMT_START {} G_STMT_END
+# define SPELLING_PROFILER_BEGIN_MARK G_STMT_START {} G_STMT_END
+# define SPELLING_PROFILER_END_MARK(name, message) G_STMT_START {} G_STMT_END
+# define SPELLING_PROFILER_LOG(format, ...) G_STMT_START {} G_STMT_END
 #endif
 
 G_END_DECLS

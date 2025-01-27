@@ -335,7 +335,7 @@ spelling_job_check (GTask        *task,
       gsize i;
       guint pos;
 
-      SPELLING_PROFILER_BEGIN_MARK
+      SPELLING_PROFILER_BEGIN_MARK;
 
       spelling_boundaries_clear (&boundaries);
 
