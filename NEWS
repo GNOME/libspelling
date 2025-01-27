@@ -1,3 +1,12 @@
+libspelling 0.4.6
+=================
+
+This is a bug-fix release for GNOME 47
+
+ * Improve detection of asynchronous fragment cancellation to break out
+   of long-running spellchecking.
+ * Fix Rust example and documentation links.
+
 libspelling 0.4.5
 =================
 
