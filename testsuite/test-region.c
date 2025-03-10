@@ -663,6 +663,22 @@ foreach_in_range (void)
   _cjh_text_region_free (region);
 }
 
+static void
+full_tail_node (void)
+{
+  CjhTextRegion *region = _cjh_text_region_new (NULL, NULL);
+
+  for (guint i = 0; i < CJH_TEXT_REGION_MAX_RUNS-3; i++)
+    _cjh_text_region_insert (region, i, 1, GUINT_TO_POINTER (i));
+  _cjh_text_region_insert (region, CJH_TEXT_REGION_MAX_RUNS-3, 100, GUINT_TO_POINTER (1000));
+
+  _cjh_text_region_remove (region, CJH_TEXT_REGION_MAX_RUNS-1, 1);
+  _cjh_text_region_remove (region, CJH_TEXT_REGION_MAX_RUNS, 1);
+  _cjh_text_region_remove (region, CJH_TEXT_REGION_MAX_RUNS+1, 1);
+
+  _cjh_text_region_free (region);
+}
+
 int
 main (int argc,
       char *argv[])
@@ -680,5 +696,6 @@ main (int argc,
   g_test_add_func ("/Cjh/TextRegion/replace_part_of_long_run", replace_part_of_long_run);
   g_test_add_func ("/Cjh/TextRegion/words_database", test_words_database);
   g_test_add_func ("/Cjh/TextRegion/get_run_at_offset", get_run_at_offset);
+  g_test_add_func ("/Cjh/TextRegion/full_tail_node", full_tail_node);
   return g_test_run ();
 }
