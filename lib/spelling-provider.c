@@ -152,7 +152,7 @@ spelling_provider_get_default (void)
 
   if (instance == NULL)
     {
-#ifdef HAVE_ENCHANT
+#if HAVE_ENCHANT
       instance = spelling_enchant_provider_new ();
 #endif
 
