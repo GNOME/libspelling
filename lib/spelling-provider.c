@@ -261,13 +261,28 @@ spelling_provider_get_default_code (SpellingProvider *self)
         {
           /* Skip past things like "thing.utf8" since we'll
            * prefer to just have "thing" as it ensures we're
-           * more likely to get code matches elsewhere.
+           * more likely to get code matches elsewhere. Also
+           * ignore "C" at this point (we'll try that later).
            */
-          if (strchr (langs[i], '.') != NULL)
+          if (strchr (langs[i], '.') || g_str_equal (langs[i], "C"))
             continue;
 
           if (spelling_provider_supports_language (self, langs[i]))
             return langs[i];
+        }
+
+      /* Since nothing matches the currently language set,
+       * try to take the first match. Languages like zh_CN
+       * are unlikely to have a spelling dictionary and we
+       * don't want to enforce en_US type boundaries on them
+       * as the experience would be abysmal.
+       */
+      for (guint i = 0; langs[i]; i++)
+        {
+          if (strchr (langs[i], '.') || g_str_equal (langs[i], "C"))
+            continue;
+
+          return langs[i];
         }
     }
 
