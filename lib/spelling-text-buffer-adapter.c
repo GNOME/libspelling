@@ -130,10 +130,8 @@ spelling_text_buffer_adapter_check_enabled (gpointer instance)
   if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
     return FALSE;
 
-#if GTK_SOURCE_CHECK_VERSION(5, 9, 0)
   if (gtk_source_buffer_get_loading (GTK_SOURCE_BUFFER (buffer)))
     return FALSE;
-#endif
 
   return self->enabled;
 }
@@ -783,7 +781,6 @@ spelling_text_buffer_adapter_cursor_moved (SpellingTextBufferAdapter *self,
                                                   g_object_unref);
 }
 
-#if GTK_SOURCE_CHECK_VERSION(5, 9, 0)
 static void
 spelling_text_buffer_adapter_notify_loading_cb (SpellingTextBufferAdapter *self,
                                                 GParamSpec                *pspec,
@@ -795,7 +792,6 @@ spelling_text_buffer_adapter_notify_loading_cb (SpellingTextBufferAdapter *self,
   if (self->engine != NULL)
     spelling_engine_invalidate_all (self->engine);
 }
-#endif
 
 static void
 spelling_text_buffer_adapter_finalize (GObject *object)
@@ -967,13 +963,11 @@ spelling_text_buffer_adapter_init (SpellingTextBufferAdapter *self)
                                  G_CALLBACK (spelling_text_buffer_adapter_cursor_moved),
                                  self,
                                  G_CONNECT_SWAPPED);
-#if GTK_SOURCE_CHECK_VERSION(5, 9, 0)
   g_signal_group_connect_object (self->buffer_signals,
                                  "notify::loading",
                                  G_CALLBACK (spelling_text_buffer_adapter_notify_loading_cb),
                                  self,
                                  G_CONNECT_SWAPPED);
-#endif
 
   self->engine = spelling_engine_new (&adapter_funcs, G_OBJECT (self));
 }
