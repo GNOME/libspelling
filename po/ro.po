@@ -2,15 +2,15 @@
 # Copyright (C) 2023 libspelling's COPYRIGHT HOLDER
 # This file is distributed under the same license as the libspelling package.
 # Florentina Musat <deep.sky.028@gmail.com>, 2023.
+# Antonio Marin <gnmer.6qxyg@slmail.me>, 2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: libspelling main\n"
-"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/libspelling/issues\n"
-"POT-Creation-Date: 2024-10-18 12:30-0700\n"
-"PO-Revision-Date: 2024-08-23 08:29+0300\n"
-"Last-Translator: Florentina Mușat <florentina [dot] musat [dot] 28 [at] "
-"gmail [dot] com>\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/libspelling/-/issues\n"
+"POT-Creation-Date: 2025-01-11 09:30+0000\n"
+"PO-Revision-Date: 2025-06-04 10:43+0200\n"
+"Last-Translator: Antonio Marin <gnmer.6qxyg@slmail.me>\n"
 "Language-Team: Romanian <gnomero-list@lists.sourceforge.net>\n"
 "Language: ro\n"
 "MIME-Version: 1.0\n"
@@ -18,11 +18,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
 "20)) ? 1 : 2);\n"
-"X-Generator: Poedit 3.4.4\n"
+"X-Generator: Gtranslator 48.0\n"
 
 #: lib/spelling-menu.c:273
 msgid "Add to Dictionary"
-msgstr "Adaugă la dicționar"
+msgstr "Adaugă în dicționar"
 
 #: lib/spelling-menu.c:274
 msgid "Ignore"
@@ -34,4 +34,4 @@ msgstr "Verifică ortografia"
 
 #: lib/spelling-menu.c:284
 msgid "Languages"
-msgstr "Limbi străine"
+msgstr "Limbi"
