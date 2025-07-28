@@ -72,24 +72,31 @@ test_cursor (void)
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "this");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "is");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "a");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "series");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "of");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "words");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, NULL);
+  g_clear_pointer (&word, g_free);
 
   _cjh_text_region_free (region);
 }
@@ -154,15 +161,19 @@ test_cursor_in_word (void)
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "series");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "of");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "words");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, NULL);
+  g_clear_pointer (&word, g_free);
 
   _cjh_text_region_free (region);
 }
@@ -180,27 +191,35 @@ test_cursor_join_words (void)
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "it's");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "possible");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "we're");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "going");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "to");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "have");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, "join-words");
+  g_clear_pointer (&word, g_free);
 
   word = next_word (cursor);
   g_assert_cmpstr (word, ==, NULL);
+  g_clear_pointer (&word, g_free);
 
   _cjh_text_region_free (region);
 }
