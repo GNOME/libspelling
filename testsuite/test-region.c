@@ -615,10 +615,9 @@ test_words_database (void)
   state.changes = str->str;
   state.res = res;
   _cjh_text_region_foreach (region, word_foreach_cb, &state);
+  _cjh_text_region_free (g_steal_pointer (&region));
 
   g_assert_true (g_str_equal (contents, res->str));
-
-  _cjh_text_region_free (region);
 }
 
 static gboolean
