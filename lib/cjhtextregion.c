@@ -618,17 +618,17 @@ cjh_text_region_node_free (CjhTextRegionNode *node)
 void
 _cjh_text_region_free (CjhTextRegion *region)
 {
-  if (region != NULL)
-    {
-      g_assert (cjh_text_region_node_is_root (&region->root));
-      g_assert (!SORTED_ARRAY_IS_EMPTY (&region->root.branch.children));
+  if (region == NULL)
+    return;
 
-      SORTED_ARRAY_FOREACH (&region->root.branch.children, CjhTextRegionChild, child, {
-        cjh_text_region_node_free (child->node);
-      });
+  g_assert (cjh_text_region_node_is_root (&region->root));
+  g_assert (!SORTED_ARRAY_IS_EMPTY (&region->root.branch.children));
 
-      g_free (region);
-    }
+  SORTED_ARRAY_FOREACH (&region->root.branch.children, CjhTextRegionChild, child, {
+    cjh_text_region_node_free (child->node);
+  });
+
+  g_free (region);
 }
 
 static inline gboolean
