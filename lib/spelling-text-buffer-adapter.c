@@ -30,6 +30,8 @@
 #include "spelling-menu-private.h"
 #include "spelling-text-buffer-adapter.h"
 
+#define NO_SPELL_CHECK_TAG "gtksourceview:context-classes:no-spell-check"
+
 /**
  * SpellingTextBufferAdapter:
  *
@@ -485,7 +487,7 @@ on_tag_added_cb (SpellingTextBufferAdapter *self,
                 "name", &name,
                 NULL);
 
-  if (name && strcmp (name, "gtksourceview:context-classes:no-spell-check") == 0)
+  if (name && strcmp (name, NO_SPELL_CHECK_TAG) == 0)
     {
       g_set_object (&self->no_spell_check_tag, tag);
       spelling_text_buffer_adapter_invalidate_all (self);
@@ -568,6 +570,7 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
 {
   GtkTextIter begin, end;
   GtkTextTagTable *tag_table;
+  GtkTextTag *tag;
   guint offset;
   guint length;
 
@@ -636,6 +639,9 @@ spelling_text_buffer_adapter_set_buffer (SpellingTextBufferAdapter *self,
                            G_CALLBACK (invalidate_tag_region_cb),
                            self,
                            G_CONNECT_SWAPPED);
+
+  if ((tag = gtk_text_tag_table_lookup (tag_table, NO_SPELL_CHECK_TAG)))
+    on_tag_added_cb (self, tag, tag_table);
 }
 
 static void
