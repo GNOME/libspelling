@@ -567,10 +567,10 @@ split_word_cb (gsize                   offset,
 static void
 test_words_database (void)
 {
-  CjhTextRegion *region = _cjh_text_region_new (join_word_cb, split_word_cb);
+  CjhTextRegion *region;
   g_autofree char *contents = NULL;
-  g_autoptr(GString) str = g_string_new (NULL);
-  g_autoptr(GString) res = g_string_new (NULL);
+  g_autoptr(GString) str = NULL;
+  g_autoptr(GString) res = NULL;
   const char *word;
   const char *iter;
   gsize len;
@@ -581,6 +581,10 @@ test_words_database (void)
       g_test_skip ("Words database not available");
       return;
     }
+
+  region = _cjh_text_region_new (join_word_cb, split_word_cb);
+  str = g_string_new (NULL);
+  res = g_string_new (NULL);
 
   /* 0 offset of base buffer */
   _cjh_text_region_insert (region, 0, len, NULL);
