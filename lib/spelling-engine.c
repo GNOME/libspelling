@@ -431,9 +431,20 @@ spelling_engine_dispose (GObject *object)
 
   g_clear_object (&self->active);
   g_clear_handle_id (&self->queued_update_handler, g_source_remove);
-  g_weak_ref_clear (&self->instance_wr);
+  g_weak_ref_set (&self->instance_wr, NULL);
 
   G_OBJECT_CLASS (spelling_engine_parent_class)->dispose (object);
+}
+
+static void
+spelling_engine_finalize (GObject *object)
+{
+  SpellingEngine *self = (SpellingEngine *)object;
+
+  g_weak_ref_clear (&self->instance_wr);
+  g_clear_pointer (&self->region, _cjh_text_region_free);
+
+  G_OBJECT_CLASS (spelling_engine_parent_class)->finalize (object);
 }
 
 static void
@@ -442,6 +453,7 @@ spelling_engine_class_init (SpellingEngineClass *klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->dispose = spelling_engine_dispose;
+  object_class->finalize = spelling_engine_finalize;
 }
 
 static void
