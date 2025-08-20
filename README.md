@@ -9,6 +9,14 @@ spellcheck implementation. However, it is licensed LGPLv2.1+.
 
 [Our documentation](https://gnome.pages.gitlab.gnome.org/libspelling/libspelling-1/) is updated on every commit.
 
+## Installing Dictionaries
+
+Currently, libspelling wraps `enchant-2` only.
+That means to get additional dictionaries you need to follow the same directions as enchant.
+Generally, that means installing packages like `apsell-en` or `hunspell-fr` and so forth.
+
+Enchant should pick those up and use them the next time a libspelling-based application is run.
+
 ## Example
 
 ### In C
