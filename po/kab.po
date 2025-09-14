@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: libspelling main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/libspelling/-/issues\n"
-"POT-Creation-Date: 2025-01-11 09:30+0000\n"
-"PO-Revision-Date: 2025-03-30 12:42+0100\n"
+"POT-Creation-Date: 2025-09-10 21:31+0000\n"
+"PO-Revision-Date: 2025-09-14 10:17+0100\n"
 "Last-Translator: ButterflyOfFire <butterflyoffire@protonmail.com>\n"
 "Language-Team: Kabyle\n"
 "Language: kab\n"
@@ -26,16 +26,16 @@ msgstr ""
 
 #: lib/spelling-menu.c:273
 msgid "Add to Dictionary"
-msgstr ""
+msgstr "Rnu ɣer umawal"
 
 #: lib/spelling-menu.c:274
 msgid "Ignore"
-msgstr ""
+msgstr "Anef-as"
 
 #: lib/spelling-menu.c:275
 msgid "Check Spelling"
-msgstr ""
+msgstr "Selken taɣdirawt"
 
 #: lib/spelling-menu.c:284
 msgid "Languages"
-msgstr ""
+msgstr "Tutlayin"
