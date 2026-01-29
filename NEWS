@@ -1,3 +1,11 @@
+libspelling 0.4.10
+==================
+
+This is a bug-fix release for GNOME 48 and newer
+
+ * Add Cornish and Uighur translations
+ * Update Norwegian Bokmål and Kabyle translations
+
 libspelling 0.4.9
 =================
 
