@@ -1,16 +1,16 @@
 # Bulgarian translation of libspelling po-file.
-# Copyright (C) 2022, 2023, 2024 Alexander Shopov.
+# Copyright (C) 2022, 2023, 2024, 2026 Alexander Shopov.
 # Copyright (C) 2024 twlvnn kraftwerk.
 # This file is distributed under the same license as the libspelling package.
-# Alexander Shopov <ash@kambanaria.org> 2022, 2023, 2024.
+# Alexander Shopov <ash@kambanaria.org> 2022, 2023, 2024, 2026.
 # twlvnn kraftwerk <kraft_werk@tutanota.com>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: libspelling main\n"
-"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/libspelling/issues\n"
-"POT-Creation-Date: 2024-10-18 12:30-0700\n"
-"PO-Revision-Date: 2024-08-31 11:54+0200\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/libspelling/-/issues\n"
+"POT-Creation-Date: 2024-10-31 20:29+0000\n"
+"PO-Revision-Date: 2026-02-22 18:54+0100\n"
 "Last-Translator: Alexander Shopov <ash@kambanaria.org>\n"
 "Language-Team: Bulgarian <dict@fsa-bg.org>\n"
 "Language: bg\n"
@@ -25,7 +25,7 @@ msgstr "Добавяне в речника"
 
 #: lib/spelling-menu.c:274
 msgid "Ignore"
-msgstr "Игнориране"
+msgstr "Прескачане"
 
 #: lib/spelling-menu.c:275
 msgid "Check Spelling"
