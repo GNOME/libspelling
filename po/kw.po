@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: libspelling main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/libspelling/-/issues\n"
 "POT-Creation-Date: 2024-10-31 20:29+0000\n"
-"PO-Revision-Date: 2026-01-26 12:42+0000\n"
+"PO-Revision-Date: 2026-04-26 20:18+0100\n"
 "Last-Translator: Flynn Peck <cirilla@tuta.io>\n"
 "Language-Team: kw\n"
 "Language: kw\n"
@@ -23,11 +23,11 @@ msgstr ""
 "X-DL-Domain: po\n"
 "X-DL-State: Translating\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Gtranslator 49.0\n"
+"X-Generator: Gtranslator 50.0\n"
 
 #: lib/spelling-menu.c:273
 msgid "Add to Dictionary"
-msgstr "Addya dhe Gerlyver"
+msgstr "Keworra dhe Erlyver"
 
 #: lib/spelling-menu.c:274
 msgid "Ignore"
