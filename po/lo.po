@@ -1,0 +1,33 @@
+# Lao translation for libspelling.
+# Copyright (C) 2025 libspelling's COPYRIGHT HOLDER
+# This file is distributed under the same license as the libspelling package.
+# bone NI <bounkirdni@gmail.com>,  2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: libspelling main\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/libspelling/-/issues\n"
+"POT-Creation-Date: 2025-09-10 21:31+0000\n"
+"PO-Revision-Date: 2025-09-10 21:31+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Lao <lo@li.org>\n"
+"Language: lo\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: lib/spelling-menu.c:273
+msgid "Add to Dictionary"
+msgstr "ເພີ່ມໃສ່ວັດຈະນານຸກົມ"
+
+#: lib/spelling-menu.c:274
+msgid "Ignore"
+msgstr "ບໍ່ສົນໃຈ"
+
+#: lib/spelling-menu.c:275
+msgid "Check Spelling"
+msgstr "ກວດການສະກົດຄຳ"
+
+#: lib/spelling-menu.c:284
+msgid "Languages"
+msgstr "ພາສາ"
