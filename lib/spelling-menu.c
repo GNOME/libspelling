@@ -286,7 +286,7 @@ spelling_menu_new (void)
   g_menu_item_set_attribute (add_item, "hidden-when", "s", "action-disabled");
   g_menu_item_set_attribute (ignore_item, "hidden-when", "s", "action-disabled");
   g_menu_item_set_attribute (check_item, "role", "s", "check");
-  g_menu_item_set_attribute (languages_item, "submenu-action", "s", "spellcheck.enabled");
+  g_menu_item_set_attribute (languages_item, "submenu-action", "s", "spelling.enabled");
 
   g_menu_append_section (menu, NULL, G_MENU_MODEL (corrections_menu));
   g_menu_append_item (menu, add_item);
