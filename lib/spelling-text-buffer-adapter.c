@@ -1269,8 +1269,7 @@ spelling_language_action (SpellingTextBufferAdapter *self,
 
   code = g_variant_get_string (param, NULL);
 
-  if (self->checker)
-    spelling_checker_set_language (self->checker, code);
+  spelling_text_buffer_adapter_set_language (self, code);
 }
 
 /**
