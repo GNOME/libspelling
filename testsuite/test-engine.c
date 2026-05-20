@@ -20,6 +20,9 @@
 
 #include "config.h"
 
+#include <locale.h>
+#include <string.h>
+
 #include <libspelling.h>
 
 #include "spelling-engine-private.h"
@@ -28,6 +31,22 @@ static GString *buffer;
 static GtkBitset *mispelled;
 static SpellingDictionary *dictionary;
 static guint cursor;
+static guint last_clear_position;
+static guint last_clear_length;
+
+typedef struct _TestDictionary
+{
+  SpellingDictionary parent_instance;
+} TestDictionary;
+
+typedef struct _TestDictionaryClass
+{
+  SpellingDictionaryClass parent_class;
+} TestDictionaryClass;
+
+GType test_dictionary_get_type (void);
+
+G_DEFINE_FINAL_TYPE (TestDictionary, test_dictionary, SPELLING_TYPE_DICTIONARY)
 
 typedef struct
 {
@@ -36,6 +55,42 @@ typedef struct
   guint offset;
   gunichar ch;
 } StringIter;
+
+static gboolean
+test_dictionary_contains_word (SpellingDictionary *self,
+                               const char         *word,
+                               gssize              word_len)
+{
+  g_assert (SPELLING_IS_DICTIONARY (self));
+  g_assert (word != NULL);
+  g_assert (word_len >= 0);
+
+  return (word_len == 3 &&
+          (strncmp (word, "foo", word_len) == 0 ||
+           strncmp (word, "bar", word_len) == 0));
+}
+
+static const char *
+test_dictionary_get_extra_word_chars (SpellingDictionary *self)
+{
+  g_assert (SPELLING_IS_DICTIONARY (self));
+
+  return "";
+}
+
+static void
+test_dictionary_class_init (TestDictionaryClass *klass)
+{
+  SpellingDictionaryClass *dictionary_class = SPELLING_DICTIONARY_CLASS (klass);
+
+  dictionary_class->contains_word = test_dictionary_contains_word;
+  dictionary_class->get_extra_word_chars = test_dictionary_get_extra_word_chars;
+}
+
+static void
+test_dictionary_init (TestDictionary *self)
+{
+}
 
 static inline gboolean
 string_iter_is_end (StringIter *iter)
@@ -96,6 +151,9 @@ clear_tag (gpointer instance,
            guint    position,
            guint    length)
 {
+  last_clear_position = position;
+  last_clear_length = length;
+
   gtk_bitset_remove_range (mispelled, position, length);
 }
 
@@ -301,10 +359,10 @@ test_engine_basic (void)
 {
   g_autoptr(SpellingEngine) engine = NULL;
   g_autoptr(GObject) instance = g_object_new (G_TYPE_OBJECT, NULL);
-  SpellingProvider *provider = spelling_provider_get_default ();
-  const char *default_code = spelling_provider_get_default_code (provider);
 
-  dictionary = spelling_provider_load_dictionary (provider, default_code);
+  dictionary = g_object_new (test_dictionary_get_type (),
+                             "code", "en_US",
+                             NULL);
 
   buffer = g_string_new (NULL);
   mispelled = gtk_bitset_new_empty ();
@@ -323,11 +381,46 @@ test_engine_basic (void)
   g_object_unref (dictionary);
 }
 
+static void
+test_engine_delete_invalidates_joined_word (void)
+{
+  g_autoptr(SpellingEngine) engine = NULL;
+  g_autoptr(GObject) instance = g_object_new (G_TYPE_OBJECT, NULL);
+
+  dictionary = g_object_new (test_dictionary_get_type (),
+                             "code", "en_US",
+                             NULL);
+
+  buffer = g_string_new (NULL);
+  mispelled = gtk_bitset_new_empty ();
+  engine = spelling_engine_new (&adapter, instance);
+
+  insert (engine, "foo bar", 0, "foo bar");
+
+  g_assert_cmpuint (gtk_bitset_get_size (mispelled), ==, 0);
+
+  last_clear_position = G_MAXUINT;
+  last_clear_length = G_MAXUINT;
+
+  delete (engine, 3, 1, "foobar");
+
+  g_assert_cmpuint (last_clear_position, ==, 0);
+  g_assert_cmpuint (last_clear_length, ==, 6);
+
+  g_string_free (buffer, TRUE);
+  gtk_bitset_unref (mispelled);
+  g_object_unref (dictionary);
+}
+
 int
 main (int argc,
       char *argv[])
 {
+  setlocale (LC_ALL, "C");
+
   g_test_init (&argc, &argv, NULL);
   g_test_add_func ("/Spelling/Engine/basic", test_engine_basic);
+  g_test_add_func ("/Spelling/Engine/delete_invalidates_joined_word",
+                   test_engine_delete_invalidates_joined_word);
   return g_test_run ();
 }

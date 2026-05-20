@@ -530,9 +530,18 @@ void
 spelling_engine_after_delete_range (SpellingEngine *self,
                                     guint           position)
 {
+  g_autoptr(GObject) instance = NULL;
+  guint begin;
+  guint end;
+
   g_return_if_fail (SPELLING_IS_ENGINE (self));
 
-  spelling_engine_invalidate (self, position, 0);
+  begin = position;
+  end = position;
+
+  if ((instance = g_weak_ref_get (&self->instance_wr)) &&
+      spelling_engine_extend_range (self, &begin, &end))
+    spelling_engine_invalidate (self, begin, end - begin);
 }
 
 void
