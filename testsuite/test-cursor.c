@@ -179,6 +179,24 @@ test_cursor_in_word (void)
 }
 
 static void
+test_cursor_all_checked (void)
+{
+  g_autoptr(GtkTextBuffer) buffer = gtk_text_buffer_new (NULL);
+  CjhTextRegion *region = _cjh_text_region_new (NULL, NULL);
+  g_autoptr(SpellingCursor) cursor = spelling_cursor_new (buffer, region, NULL, NULL);
+  char *word;
+
+  gtk_text_buffer_set_text (buffer, test_text, -1);
+  _cjh_text_region_insert (region, 0, strlen (test_text), GINT_TO_POINTER (1));
+
+  word = next_word (cursor);
+  g_assert_cmpstr (word, ==, NULL);
+  g_clear_pointer (&word, g_free);
+
+  _cjh_text_region_free (region);
+}
+
+static void
 test_cursor_join_words (void)
 {
   g_autoptr(GtkTextBuffer) buffer = gtk_text_buffer_new (NULL);
@@ -245,6 +263,7 @@ main (int argc,
   g_test_add_func ("/Spelling/Cursor/basic2", test_cursor2);
 #endif
   g_test_add_func ("/Spelling/Cursor/in_word", test_cursor_in_word);
+  g_test_add_func ("/Spelling/Cursor/all_checked", test_cursor_all_checked);
   g_test_add_func ("/Spelling/Cursor/join_words", test_cursor_join_words);
   return g_test_run ();
 }

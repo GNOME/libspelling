@@ -41,6 +41,12 @@ typedef struct
 
 typedef struct
 {
+  gsize position;
+  gboolean found;
+} RegionIterNext;
+
+typedef struct
+{
   GtkTextBuffer *buffer;
   GtkTextTag *tag;
   GtkTextIter pos;
@@ -78,8 +84,10 @@ region_iter_next_cb (gsize                   position,
 {
   if (run->data == RUN_UNCHECKED)
     {
-      gsize *pos = user_data;
-      *pos = position;
+      RegionIterNext *state = user_data;
+
+      state->position = position;
+      state->found = TRUE;
       RETURN (TRUE);
     }
 
@@ -90,7 +98,8 @@ static gboolean
 region_iter_next (RegionIter  *self,
                   GtkTextIter *iter)
 {
-  gsize pos, new_pos;
+  RegionIterNext state = {0};
+  gsize pos;
 
   if (self->pos >= (gssize)_cjh_text_region_get_length (self->region))
     {
@@ -107,9 +116,16 @@ region_iter_next (RegionIter  *self,
                                      pos,
                                      _cjh_text_region_get_length (self->region),
                                      region_iter_next_cb,
-                                     &new_pos);
+                                     &state);
 
-  pos = MAX (pos, new_pos);
+  if (!state.found)
+    {
+      gtk_text_buffer_get_end_iter (self->buffer, iter);
+      self->pos = _cjh_text_region_get_length (self->region);
+      RETURN (FALSE);
+    }
+
+  pos = MAX (pos, state.position);
   gtk_text_buffer_get_iter_at_offset (self->buffer, iter, pos);
   self->pos = pos;
 
