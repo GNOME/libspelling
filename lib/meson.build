@@ -109,6 +109,16 @@ pkg.generate(
 
 if get_option('introspection').enabled()
   gnome = import('gnome')
+
+  gi_scanner = find_program('g-ir-scanner', required: get_option('introspection'))
+  libspelling_gir_extra_args = [
+    '-DLIBSPELLING_COMPILATION',
+  ]
+  if gi_scanner.version().version_compare('>=1.83.2')
+    libspelling_gir_extra_args += [
+      '--doc-format=gi-docgen',
+    ]
+  endif
   libspelling_gir = gnome.generate_gir(libspelling,
               nsversion: api_version,
                 sources: [libspelling_public_sources, libspelling_public_headers],
@@ -119,7 +129,7 @@ if get_option('introspection').enabled()
         export_packages: 'libspelling-' + api_version,
                 install: true,
                  header: 'libspelling.h',
-             extra_args: '-DLIBSPELLING_COMPILATION',
+             extra_args: libspelling_gir_extra_args,
   )
 
   if get_option('vapi')
