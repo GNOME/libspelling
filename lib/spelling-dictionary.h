@@ -41,7 +41,7 @@ typedef struct _SpellingDictionary SpellingDictionary;
 typedef struct _SpellingDictionaryClass SpellingDictionaryClass;
 
 SPELLING_AVAILABLE_IN_ALL
-GType        spelling_dictionary_get_type             (void) G_GNUC_CONST;
+GType        spelling_dictionary_get_type             (void);
 SPELLING_AVAILABLE_IN_ALL
 const char  *spelling_dictionary_get_code             (SpellingDictionary *self);
 SPELLING_AVAILABLE_IN_ALL
