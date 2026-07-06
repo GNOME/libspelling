@@ -41,7 +41,7 @@ typedef struct _SpellingProvider SpellingProvider;
 typedef struct _SpellingProviderClass SpellingProviderClass;
 
 SPELLING_AVAILABLE_IN_ALL
-GType               spelling_provider_get_type          (void) G_GNUC_CONST;
+GType               spelling_provider_get_type          (void);
 SPELLING_AVAILABLE_IN_ALL
 SpellingProvider   *spelling_provider_get_default       (void);
 SPELLING_AVAILABLE_IN_ALL
