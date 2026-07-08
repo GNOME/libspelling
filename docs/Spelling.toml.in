@@ -23,17 +23,17 @@ logo_url = "libspelling.svg"
   docs_url = "https://docs.gtk.org/glib/"
 
   [dependencies."Gio-2.0"]
-  name = "GIO"
+  name = "Gio"
   description = "GObject Interfaces and Objects, Networking, IPC, and I/O"
   docs_url = "https://docs.gtk.org/gio/"
 
   [dependencies."Gtk-4.0"]
-  name = "GTK"
+  name = "Gtk"
   description = "The GTK toolkit"
   docs_url = "https://docs.gtk.org/gtk4/"
 
   [dependencies."GtkSource-5"]
-  name = "GtkSourceView"
+  name = "GtkSource"
   description = "The GTK source editor widget"
   docs_url = "https://gnome.pages.gitlab.gnome.org/gtksourceview/gtksourceview5/"
 
