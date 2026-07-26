@@ -546,7 +546,7 @@ apply_error_style_cb (GtkSourceBuffer *buffer,
     gdk_rgba_parse (&error_color, "#e01b24");
 
   g_object_set (tag,
-                "underline", PANGO_UNDERLINE_ERROR_LINE,
+                "underline", PANGO_UNDERLINE_SINGLE,
                 "underline-rgba", &error_color,
                 "background-set", FALSE,
                 "foreground-set", FALSE,
