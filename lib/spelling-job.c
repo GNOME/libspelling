@@ -255,6 +255,9 @@ find_word_end (const char         **textptr,
 {
   while (*iptr < attrslen)
     {
+      if (attrs[*iptr].is_white)
+        return TRUE;
+
       if (attrs[*iptr].is_word_end)
         {
           gboolean skipped = FALSE;
