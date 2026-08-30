@@ -31,6 +31,7 @@
 #include "spelling-job-private.h"
 
 static const char *test_dictionary[] = {
+  ".",
   "Straße",
   "a",
   "calle",
@@ -49,6 +50,7 @@ static const char *test_dictionary[] = {
   "text",
   "this",
   "word",
+  "’",
   "गच्छन्तु",
   "वीथिं",
   "དུ",
@@ -82,7 +84,7 @@ test_dictionary_contains_word (SpellingDictionary *dictionary,
 static const char *
 test_dictionary_get_extra_word_chars (SpellingDictionary *dictionary)
 {
-  return "'";
+  return "'.’";
 }
 
 static void
@@ -227,6 +229,8 @@ test_job_basic (void)
     { "वीथिं गच्छन्तु", 0, NULL },
     { "སྲང་ལམ་དུ་འགྲོ།", 0, NULL },
     { "caminar por la   calle", 0, NULL },
+    { ".\nthis ", 0, NULL },
+    { "’\nthis ", 0, NULL },
     { "it'",
       1,
       (const SpellingBoundary[]) {
