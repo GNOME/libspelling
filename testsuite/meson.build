@@ -16,6 +16,7 @@ libspelling_testsuite = {
   'test-engine' : {},
   'test-job' : {},
   'test-region' : {},
+  'test-view-adapter' : {},
 }
 
 libspelling_testsuite_deps = [

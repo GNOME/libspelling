@@ -33,6 +33,7 @@ G_BEGIN_DECLS
 # include "spelling-mistakes.h"
 # include "spelling-provider.h"
 # include "spelling-text-buffer-adapter.h"
+# include "spelling-text-view-adapter.h"
 # include "spelling-types.h"
 # include "spelling-version.h"
 # include "spelling-version-macros.h"

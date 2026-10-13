@@ -25,10 +25,12 @@
 
 G_BEGIN_DECLS
 
-typedef struct _SpellingChecker    SpellingChecker;
-typedef struct _SpellingDictionary SpellingDictionary;
-typedef struct _SpellingLanguage   SpellingLanguage;
-typedef struct _SpellingMistakes   SpellingMistakes;
-typedef struct _SpellingProvider   SpellingProvider;
+typedef struct _SpellingChecker           SpellingChecker;
+typedef struct _SpellingDictionary        SpellingDictionary;
+typedef struct _SpellingLanguage          SpellingLanguage;
+typedef struct _SpellingMistakes          SpellingMistakes;
+typedef struct _SpellingProvider          SpellingProvider;
+typedef struct _SpellingTextBufferAdapter SpellingTextBufferAdapter;
+typedef struct _SpellingTextViewAdapter   SpellingTextViewAdapter;
 
 G_END_DECLS

@@ -18,6 +18,7 @@ libspelling_public_sources = [
   'spelling-language.c',
   'spelling-provider.c',
   'spelling-text-buffer-adapter.c',
+  'spelling-text-view-adapter.c',
 ]
 
 libspelling_public_headers = [
@@ -29,6 +30,7 @@ libspelling_public_headers = [
   'spelling-language.h',
   'spelling-provider.h',
   'spelling-text-buffer-adapter.h',
+  'spelling-text-view-adapter.h',
   'spelling-types.h',
   'spelling-version-macros.h',
 ]
