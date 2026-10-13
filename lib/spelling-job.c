@@ -386,7 +386,19 @@ spelling_job_check (GTask        *task,
           boundary.byte_length = p - text - boundary.byte_offset;
 
           if (boundary.byte_length > 0)
-            spelling_boundaries_append (&boundaries, &boundary);
+            {
+              /* Extra word chars can start a candidate on their own. Only
+               * check it if Pango found a word within the candidate.
+               */
+              for (gsize j = boundary.offset; j < i; j++)
+                {
+                  if (attrs[j].is_word_start)
+                    {
+                      spelling_boundaries_append (&boundaries, &boundary);
+                      break;
+                    }
+                }
+            }
         }
 
       if (g_atomic_int_get (&fragment->must_discard))
