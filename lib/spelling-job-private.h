@@ -23,14 +23,9 @@
 #include <gio/gio.h>
 
 #include "spelling-dictionary-internal.h"
+#include "spelling-mistakes.h"
 
 G_BEGIN_DECLS
-
-typedef struct _SpellingMistake
-{
-  guint offset;
-  guint length;
-} SpellingMistake;
 
 #define SPELLING_TYPE_JOB (spelling_job_get_type())
 

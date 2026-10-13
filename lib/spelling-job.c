@@ -42,11 +42,11 @@ typedef struct _SpellingFragment
   gboolean must_discard;
 } SpellingFragment;
 
-typedef struct _SpellingMistakes
+typedef struct _SpellingFragmentMistakes
 {
   const SpellingFragment *fragment;
   GArray                 *boundaries;
-} SpellingMistakes;
+} SpellingFragmentMistakes;
 
 struct _SpellingJob
 {
@@ -296,7 +296,7 @@ find_word_end (const char         **textptr,
 static void
 clear_mistakes (gpointer data)
 {
-  SpellingMistakes *mistakes = data;
+  SpellingFragmentMistakes *mistakes = data;
 
   mistakes->fragment = NULL;
   g_clear_pointer (&mistakes->boundaries, g_array_unref);
@@ -318,7 +318,7 @@ spelling_job_check (GTask        *task,
 
   spelling_boundaries_init (&boundaries);
 
-  result = g_array_new (FALSE, FALSE, sizeof (SpellingMistakes));
+  result = g_array_new (FALSE, FALSE, sizeof (SpellingFragmentMistakes));
   g_array_set_clear_func (result, clear_mistakes);
 
   SPELLING_PROFILER_LOG ("Checking %u fragments", self->fragments->len);
@@ -329,7 +329,7 @@ spelling_job_check (GTask        *task,
       G_GNUC_UNUSED g_autofree char *message = NULL;
       g_autoptr(GtkBitset) bitset = NULL;
       g_autofree PangoLogAttr *attrs = NULL;
-      SpellingMistakes mistakes;
+      SpellingFragmentMistakes mistakes;
       const char *text;
       const char *p;
       GtkBitsetIter iter;
@@ -512,7 +512,7 @@ spelling_job_run_finish (SpellingJob       *self,
 
       for (guint i = 0; i < ar->len; i++)
         {
-          const SpellingMistakes *m = &g_array_index (ar, SpellingMistakes, i);
+          const SpellingFragmentMistakes *m = &g_array_index (ar, SpellingFragmentMistakes, i);
 
           if (m->fragment->must_discard)
             continue;
@@ -527,7 +527,7 @@ spelling_job_run_finish (SpellingJob       *self,
 
       for (guint i = 0; i < ar->len; i++)
         {
-          const SpellingMistakes *m = &g_array_index (ar, SpellingMistakes, i);
+          const SpellingFragmentMistakes *m = &g_array_index (ar, SpellingFragmentMistakes, i);
 
           if (m->fragment->must_discard)
             continue;
