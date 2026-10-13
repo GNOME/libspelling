@@ -7,6 +7,7 @@ project('libspelling', 'c',
 libgtk_dep = dependency('gtk4', version: '>= 4.15.5')
 gtksource_dep = dependency('gtksourceview-5', version: '>= 5.10.0')
 libgio_dep = dependency('gio-2.0')
+libdex_dep = dependency('libdex-1', version: '>= 1.2')
 
 cc = meson.get_compiler('c')
 

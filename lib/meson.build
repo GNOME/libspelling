@@ -33,6 +33,7 @@ libspelling_public_headers = [
 
 libspelling_deps = [
   libgio_dep,
+  libdex_dep,
   libgtk_dep,
   gtksource_dep,
 ]
@@ -103,7 +104,7 @@ pkg.generate(
      filebase: 'libspelling-' + api_version,
       version: meson.project_version(),
       subdirs: 'libspelling-' + api_version,
-     requires: ['gio-2.0', 'gtk4', 'gtksourceview-5'],
+     requires: ['gio-2.0', 'gtk4', 'gtksourceview-5', 'libdex-1 >= 1.2'],
   install_dir: join_paths(get_option('libdir'), 'pkgconfig')
 )
 
@@ -125,7 +126,7 @@ if get_option('introspection').enabled()
               namespace: 'Spelling',
           symbol_prefix: 'spelling',
       identifier_prefix: 'Spelling',
-               includes: ['Gio-2.0', 'Gtk-4.0', 'GtkSource-5'],
+               includes: ['Gio-2.0', 'Dex-1', 'Gtk-4.0', 'GtkSource-5'],
         export_packages: 'libspelling-' + api_version,
                 install: true,
                  header: 'libspelling.h',
@@ -137,7 +138,7 @@ if get_option('introspection').enabled()
             sources: libspelling_gir.get(0),
             install: true,
         install_dir: join_paths(datadir, 'vala', 'vapi'),
-           packages: ['gio-2.0', 'gtk4', 'gtksourceview-5'],
+           packages: ['gio-2.0', 'gtk4', 'gtksourceview-5', 'libdex-1'],
     )
   endif
 endif

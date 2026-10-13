@@ -23,6 +23,8 @@
 
 #include <glib/gi18n.h>
 
+#include <libdex.h>
+
 #include "spelling-checker.h"
 #include "spelling-dictionary.h"
 #include "spelling-init.h"
@@ -63,5 +65,6 @@ _spelling_init (void)
 void
 spelling_init (void)
 {
+  dex_init ();
   _spelling_init ();
 }
