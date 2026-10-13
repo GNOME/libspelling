@@ -30,6 +30,7 @@ G_BEGIN_DECLS
 # include "spelling-dictionary.h"
 # include "spelling-init.h"
 # include "spelling-language.h"
+# include "spelling-mistakes.h"
 # include "spelling-provider.h"
 # include "spelling-text-buffer-adapter.h"
 # include "spelling-types.h"

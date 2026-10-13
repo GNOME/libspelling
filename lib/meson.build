@@ -13,6 +13,7 @@ libspelling_private_sources = [
 libspelling_public_sources = [
   'spelling-init.c',
   'spelling-checker.c',
+  'spelling-mistakes.c',
   'spelling-dictionary.c',
   'spelling-language.c',
   'spelling-provider.c',
@@ -22,6 +23,7 @@ libspelling_public_sources = [
 libspelling_public_headers = [
   'libspelling.h',
   'spelling-checker.h',
+  'spelling-mistakes.h',
   'spelling-dictionary.h',
   'spelling-init.h',
   'spelling-language.h',
