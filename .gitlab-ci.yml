@@ -4,6 +4,7 @@ include:
   - component: "gitlab.gnome.org/GNOME/citemplates/gnomeos-basic-ci@master"
     inputs:
       goblint: "disabled"
+      lsan-options: "suppressions=${CI_PROJECT_DIR}/testsuite/lsan.supp"
   - component: "gitlab.gnome.org/GNOME/citemplates/basic-deploy-docs@master"
   - component: "gitlab.gnome.org/GNOME/citemplates/release-service@master"
     inputs:
