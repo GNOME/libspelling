@@ -31,6 +31,18 @@ gtk_widget_insert_action_group (GTK_WIDGET (source_view), "spelling", G_ACTION_G
 spelling_text_buffer_adapter_set_enabled (adapter, TRUE);
 ```
 
+For text stored outside `GtkTextBuffer`, use
+`spelling_checker_check_ranges()`. Pass one UTF-8 `GBytes` snapshot and
+optional sorted, non-overlapping ranges measured in Unicode characters.
+Passing `NULL` and zero checks the whole snapshot. The returned `DexFuture`
+resolves to an immutable `SpellingMistakes` boxed value. Each mistake has
+Unicode character offsets for text positions and byte offsets for slicing the
+same `GBytes` snapshot. Keep a text revision with each future and apply its
+mistakes only if the text still has that revision.
+
+Call `spelling_init()` on the main thread before using libspelling, typically
+during `main()` initialization.
+
 ### In Python
 
 ```python

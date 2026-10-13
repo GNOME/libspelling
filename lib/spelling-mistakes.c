@@ -145,7 +145,7 @@ spelling_mistakes_get_n_mistakes (SpellingMistakes *self)
  * @self: a `SpellingMistakes`
  * @index: index of a mistake
  *
- * Returns: (transfer none) (nullable): a mistake in Unicode character offsets
+ * Returns: (transfer none) (nullable): a mistake in Unicode character and byte offsets
  */
 const SpellingMistake *
 spelling_mistakes_get_mistake (SpellingMistakes *self,

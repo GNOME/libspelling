@@ -48,6 +48,8 @@ typedef struct _SpellingRange
  * SpellingMistake:
  * @offset: start in Unicode characters from the beginning of the checked text
  * @length: length in Unicode characters
+ * @byte_offset: start in bytes from the beginning of the checked text
+ * @byte_length: length in bytes
  *
  * A misspelled word found in a text snapshot.
  */
@@ -55,6 +57,8 @@ typedef struct _SpellingMistake
 {
   guint64 offset;
   guint64 length;
+  guint64 byte_offset;
+  guint64 byte_length;
 } SpellingMistake;
 
 #define SPELLING_TYPE_MISTAKES (spelling_mistakes_get_type())

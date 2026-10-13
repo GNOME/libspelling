@@ -155,8 +155,6 @@ test_provider_init (TestProvider *self)
   self->dictionary = g_object_new (TEST_TYPE_DICTIONARY, NULL);
 }
 
-static GMainLoop *main_loop;
-
 typedef struct _TestJob
 {
   const char *text;
@@ -165,49 +163,18 @@ typedef struct _TestJob
 } TestJob;
 
 static void
-validate (SpellingMistake *mistakes,
-          guint            n_mistakes,
+validate (SpellingMistakes *mistakes,
           TestJob         *test)
 {
-  g_assert_cmpint (n_mistakes, ==, test->n_mistakes);
-  g_assert_true (mistakes != NULL || test->n_mistakes == 0);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, test->n_mistakes);
 
-  for (guint i = 0; i < n_mistakes; i++)
+  for (guint i = 0; i < test->n_mistakes; i++)
     {
-      g_assert_cmpint (test->mistakes[i].offset, ==, mistakes[i].offset);
-      g_assert_cmpint (test->mistakes[i].length, ==, mistakes[i].length);
+      const SpellingMistake *mistake = spelling_mistakes_get_mistake (mistakes, i);
+
+      g_assert_cmpint (test->mistakes[i].offset, ==, mistake->offset);
+      g_assert_cmpint (test->mistakes[i].length, ==, mistake->length);
     }
-}
-
-static void
-job_finished (GObject      *object,
-              GAsyncResult *result,
-              gpointer      user_data)
-{
-  g_autofree SpellingMistake *mistakes = NULL;
-  g_autofree SpellingBoundary *fragments = NULL;
-  TestJob *test = user_data;
-  GError *error = NULL;
-  guint n_mistakes;
-  guint n_fragments;
-
-  g_assert (SPELLING_IS_JOB (object));
-
-  spelling_job_run_finish (SPELLING_JOB (object), result, &fragments, &n_fragments, &mistakes, &n_mistakes);
-
-#if 0
-  for (guint i = 0; i < n_mistakes; i++)
-    {
-      g_autofree char *word = g_strndup (&test->text[mistakes[i].byte_offset], mistakes[i].byte_length);
-      g_print ("Misspelled: \"%s\"\n", word);
-    }
-#endif
-
-  g_assert_no_error (error);
-
-  validate (mistakes, n_mistakes, test);
-
-  g_main_loop_quit (main_loop);
 }
 
 static void
@@ -278,20 +245,15 @@ test_job_basic (void)
     {
       g_autoptr(GBytes) bytes = g_bytes_new (tests[i].text, strlen (tests[i].text));
       g_autoptr(SpellingJob) job = spelling_job_new (dictionary, pango_language_get_default ());
-      g_autofree SpellingMistake *mistakes = NULL;
-      g_autofree SpellingBoundary *fragments = NULL;
-      guint n_mistakes;
-      guint n_fragments;
+      g_autoptr(SpellingMistakes) mistakes = NULL;
+      g_autoptr(GError) error = NULL;
 
       spelling_job_add_fragment (job, bytes, 0, g_utf8_strlen (tests[i].text, -1));
 
-      /* Test async version */
-      spelling_job_run (job, job_finished, &tests[i]);
-      g_main_loop_run (main_loop);
-
-      /* Now test sync version */
-      spelling_job_run_sync (job, &fragments, &n_fragments, &mistakes, &n_mistakes);
-      validate (mistakes, n_mistakes, &tests[i]);
+      mistakes = dex_await_boxed (spelling_job_run (job), &error);
+      g_assert_no_error (error);
+      g_assert_nonnull (mistakes);
+      validate (mistakes, &tests[i]);
     }
 }
 
@@ -303,95 +265,234 @@ test_job_discard (void)
   g_autoptr(SpellingDictionary) dictionary = spelling_provider_load_dictionary (provider, default_code);
   g_autoptr(GBytes) bytes = g_bytes_new ("misplled word", 13);
   g_autoptr(SpellingJob) job = NULL;
-  g_autofree SpellingMistake *mistakes = NULL;
-  guint n_mistakes = 0;
+  g_autoptr(SpellingMistakes) mistakes = NULL;
+  g_autoptr(GError) error = NULL;
 
   /* First make sure things work */
   job = spelling_job_new (dictionary, pango_language_get_default ());
   spelling_job_add_fragment (job, bytes, 1, 13);
-  spelling_job_run_sync (job, NULL, NULL, &mistakes, &n_mistakes);
-  g_assert_cmpint (n_mistakes, ==, 1);
-  g_assert_cmpint (mistakes[0].offset, ==, 1);
-  g_assert_cmpint (mistakes[0].length, ==, 8);
-  g_clear_pointer (&mistakes, g_free);
+  mistakes = dex_await_boxed (spelling_job_run (job), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->offset, ==, 1);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->length, ==, 8);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
   g_clear_object (&job);
 
   /* Now try to do an INSERT that SHOULD NOT collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
   spelling_job_add_fragment (job, bytes, 1, 13);
   spelling_job_notify_insert (job, 0, 3);
-  spelling_job_run_sync (job, NULL, NULL, &mistakes, &n_mistakes);
-  g_assert_cmpint (n_mistakes, ==, 1);
-  g_assert_cmpint (mistakes[0].offset, ==, 1 + 3);
-  g_assert_cmpint (mistakes[0].length, ==, 8);
-  g_clear_pointer (&mistakes, g_free);
+  mistakes = dex_await_boxed (spelling_job_run (job), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->offset, ==, 1 + 3);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->length, ==, 8);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
   g_clear_object (&job);
 
   /* Now try to do an INSERT that SHOULD collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
   spelling_job_add_fragment (job, bytes, 1, 13);
   spelling_job_notify_insert (job, 1, 3);
-  spelling_job_run_sync (job, NULL, NULL, &mistakes, &n_mistakes);
-  g_assert_cmpint (n_mistakes, ==, 0);
-  g_assert_null (mistakes);
-  g_clear_pointer (&mistakes, g_free);
+  mistakes = dex_await_boxed (spelling_job_run (job), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, 0);
+  g_assert_nonnull (mistakes);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
   g_clear_object (&job);
 
   /* Now try to do a DELETE that SHOULD NOT collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
   spelling_job_add_fragment (job, bytes, 2, 13);
   spelling_job_notify_delete (job, 0, 1);
-  spelling_job_run_sync (job, NULL, NULL, &mistakes, &n_mistakes);
-  g_assert_cmpint (n_mistakes, ==, 1);
-  g_assert_cmpint (mistakes[0].offset, ==, 1);
-  g_assert_cmpint (mistakes[0].length, ==, 8);
-  g_clear_pointer (&mistakes, g_free);
+  mistakes = dex_await_boxed (spelling_job_run (job), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->offset, ==, 1);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->length, ==, 8);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
   g_clear_object (&job);
 
   /* Now try to do a DELETE that SHOULD collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
   spelling_job_add_fragment (job, bytes, 1, 13);
   spelling_job_notify_delete (job, 0, 1);
-  spelling_job_run_sync (job, NULL, NULL, &mistakes, &n_mistakes);
-  g_assert_cmpint (n_mistakes, ==, 0);
-  g_assert_null (mistakes);
-  g_clear_pointer (&mistakes, g_free);
+  mistakes = dex_await_boxed (spelling_job_run (job), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, 0);
+  g_assert_nonnull (mistakes);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
   g_clear_object (&job);
 
   /* Now try to do a DELETE that SHOULD collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
   spelling_job_add_fragment (job, bytes, 0, 13);
   spelling_job_notify_delete (job, 13, 1);
-  spelling_job_run_sync (job, NULL, NULL, &mistakes, &n_mistakes);
-  g_assert_cmpint (n_mistakes, ==, 0);
-  g_assert_null (mistakes);
-  g_clear_pointer (&mistakes, g_free);
+  mistakes = dex_await_boxed (spelling_job_run (job), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, 0);
+  g_assert_nonnull (mistakes);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
   g_clear_object (&job);
 
   /* Now try to do a DELETE that SHOULD NOT collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
   spelling_job_add_fragment (job, bytes, 0, 13);
   spelling_job_notify_delete (job, 14, 1);
-  spelling_job_run_sync (job, NULL, NULL, &mistakes, &n_mistakes);
-  g_assert_cmpint (n_mistakes, ==, 1);
-  g_assert_cmpint (mistakes[0].offset, ==, 0);
-  g_assert_cmpint (mistakes[0].length, ==, 8);
-  g_clear_pointer (&mistakes, g_free);
+  mistakes = dex_await_boxed (spelling_job_run (job), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->offset, ==, 0);
+  g_assert_cmpint (spelling_mistakes_get_mistake (mistakes, 0)->length, ==, 8);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
   g_clear_object (&job);
+}
+
+static void
+test_check_ranges (void)
+{
+  g_autoptr(SpellingProvider) provider = g_object_new (TEST_TYPE_PROVIDER, NULL);
+  g_autoptr(SpellingChecker) checker = spelling_checker_new (provider, "C");
+  const char *sample = "die Straße misplled word";
+  g_autoptr(GBytes) text = g_bytes_new_static (sample, strlen (sample));
+  g_autoptr(SpellingMistakes) mistakes = NULL;
+  g_autoptr(DexFuture) future = NULL;
+  g_autoptr(GError) error = NULL;
+  const SpellingMistake *mistake;
+  SpellingRange range = { 11, 8 };
+  SpellingRange adjacent[] = { { 11, 3 }, { 14, 5 } };
+
+  future = spelling_checker_check_ranges (checker, text, NULL, 0);
+  mistakes = dex_await_boxed (dex_ref (future), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpuint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  mistake = spelling_mistakes_get_mistake (mistakes, 0);
+  g_assert_cmpuint (mistake->offset, ==, 11);
+  g_assert_cmpuint (mistake->length, ==, 8);
+  g_assert_cmpuint (mistake->byte_offset, ==, 12);
+  g_assert_cmpuint (mistake->byte_length, ==, 8);
+  dex_clear (&future);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
+
+  {
+    const char *utf8_sample = "die Straße mísplled word";
+    g_autoptr(GBytes) utf8_text = g_bytes_new_static (utf8_sample, strlen (utf8_sample));
+    g_autofree char *word = NULL;
+    const char *utf8_data = g_bytes_get_data (utf8_text, NULL);
+
+    mistakes = dex_await_boxed (spelling_checker_check_ranges (checker, utf8_text, NULL, 0),
+                                &error);
+    g_assert_no_error (error);
+    g_assert_nonnull (mistakes);
+    g_assert_cmpuint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+
+    mistake = spelling_mistakes_get_mistake (mistakes, 0);
+    g_assert_cmpuint (mistake->offset, ==, 11);
+    g_assert_cmpuint (mistake->length, ==, 8);
+    g_assert_cmpuint (mistake->byte_offset, ==, 12);
+    g_assert_cmpuint (mistake->byte_length, ==, 9);
+
+    word = g_strndup (utf8_data + mistake->byte_offset, mistake->byte_length);
+    g_assert_cmpstr (word, ==, "mísplled");
+
+    g_clear_pointer (&mistakes, spelling_mistakes_unref);
+  }
+
+  future = spelling_checker_check_ranges (checker, text, &range, 1);
+  range.offset = 0;
+  range.length = 3;
+  mistakes = dex_await_boxed (dex_ref (future), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpuint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  mistake = spelling_mistakes_get_mistake (mistakes, 0);
+  g_assert_cmpuint (mistake->byte_offset, ==, 12);
+  g_assert_cmpuint (mistake->byte_length, ==, 8);
+  dex_clear (&future);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
+
+  range.offset = 0;
+  range.length = 14;
+  future = spelling_checker_check_ranges (checker, text, &range, 1);
+  mistakes = dex_await_boxed (dex_ref (future), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpuint (spelling_mistakes_get_n_mistakes (mistakes), ==, 0);
+  dex_clear (&future);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
+
+  future = spelling_checker_check_ranges (checker, text, adjacent, G_N_ELEMENTS (adjacent));
+  mistakes = dex_await_boxed (dex_ref (future), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (mistakes);
+  g_assert_cmpuint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  dex_clear (&future);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
+
+  adjacent[1].offset = 13;
+  future = spelling_checker_check_ranges (checker, text, adjacent, G_N_ELEMENTS (adjacent));
+  g_assert_null (dex_future_get_value (future, &error));
+  g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT);
+  dex_clear (&future);
+  g_clear_error (&error);
+
+  {
+    g_autoptr(GBytes) invalid = g_bytes_new_static ("bad\xff", 4);
+
+    future = spelling_checker_check_ranges (checker, invalid, NULL, 0);
+    g_assert_null (dex_future_get_value (future, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
+  }
+
+  dex_clear (&future);
+  g_clear_error (&error);
+
+  {
+    g_autoptr(GBytes) temporary = g_bytes_new_static ("misplled", 8);
+
+    future = spelling_checker_check_ranges (checker, temporary, NULL, 0);
+    g_clear_pointer (&temporary, g_bytes_unref);
+    mistakes = dex_await_boxed (dex_ref (future), &error);
+    g_assert_no_error (error);
+    g_assert_nonnull (mistakes);
+    g_assert_cmpuint (spelling_mistakes_get_n_mistakes (mistakes), ==, 1);
+  }
+
+  dex_clear (&future);
+  g_clear_pointer (&mistakes, spelling_mistakes_unref);
+
+  {
+    g_autoptr(GBytes) punctuation = g_bytes_new_static ("' ’ ", 6);
+
+    mistakes = dex_await_boxed (spelling_checker_check_ranges (checker, punctuation, NULL, 0),
+                                &error);
+    g_assert_no_error (error);
+    g_assert_nonnull (mistakes);
+    g_assert_cmpuint (spelling_mistakes_get_n_mistakes (mistakes), ==, 0);
+  }
 }
 
 int
 main (int argc,
       char *argv[])
 {
-  main_loop = g_main_loop_new (NULL, FALSE);
-
   setlocale (LC_ALL, "");
   bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
   textdomain (GETTEXT_PACKAGE);
 
+  dex_init ();
   g_test_init (&argc, &argv, NULL);
-  g_test_add_func ("/Spelling/Job/basic", test_job_basic);
-  g_test_add_func ("/Spelling/Job/discard", test_job_discard);
+  dex_test_add_func ("/Spelling/Job/basic", test_job_basic);
+  dex_test_add_func ("/Spelling/Job/discard", test_job_discard);
+  dex_test_add_func ("/Spelling/Checker/check-ranges", test_check_ranges);
   return g_test_run ();
 }
