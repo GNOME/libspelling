@@ -25,6 +25,9 @@
 
 #include "spelling-checker-private.h"
 #include "spelling-dictionary.h"
+#include "spelling-init.h"
+#include "spelling-job-private.h"
+#include "spelling-mistakes-private.h"
 #include "spelling-provider.h"
 
 /**
@@ -41,6 +44,11 @@ struct _SpellingChecker
   SpellingDictionary *dictionary;
   PangoLanguage      *language;
 };
+
+DEX_DEFINE_CLOSURE_TYPE (SpellingCheckClosure, spelling_check_closure,
+                         DEX_DEFINE_CLOSURE_OBJECT (SpellingJob, job),
+                         DEX_DEFINE_CLOSURE_POINTER (SpellingRange *, ranges, g_free),
+                         DEX_DEFINE_CLOSURE_VALUE (gsize, n_ranges))
 
 G_DEFINE_FINAL_TYPE (SpellingChecker, spelling_checker, G_TYPE_OBJECT)
 
@@ -78,6 +86,156 @@ spelling_checker_new (SpellingProvider *provider,
                        "provider", provider,
                        "language", language,
                        NULL);
+}
+
+static gboolean
+spelling_check_range_contains (SpellingCheckClosure  *closure,
+                               const SpellingMistake *mistake)
+{
+  guint64 end = mistake->offset + mistake->length;
+
+  for (gsize i = 0; i < closure->n_ranges; i++)
+    {
+      const SpellingRange *range = &closure->ranges[i];
+
+      if (range->offset > mistake->offset)
+        break;
+
+      if (mistake->offset >= range->offset && end <= range->offset + range->length)
+        return TRUE;
+    }
+
+  return FALSE;
+}
+
+static DexFuture *
+spelling_checker_check_ranges_done (DexFuture *future,
+                                    gpointer   user_data)
+{
+  SpellingCheckClosure *closure = user_data;
+  const GValue *value = dex_future_get_value (future, NULL);
+  SpellingMistakes *checked = g_value_get_boxed (value);
+  g_autoptr(GArray) selected = NULL;
+  SpellingMistakes *mistakes;
+
+  if (closure->ranges == NULL)
+    return dex_future_new_take_boxed (SPELLING_TYPE_MISTAKES,
+                                      spelling_mistakes_ref (checked));
+
+  selected = g_array_sized_new (FALSE, FALSE, sizeof (SpellingMistake),
+                                spelling_mistakes_get_n_mistakes (checked));
+
+  for (guint i = 0; i < spelling_mistakes_get_n_mistakes (checked); i++)
+    {
+      const SpellingMistake *mistake = spelling_mistakes_get_mistake (checked, i);
+
+      if (spelling_check_range_contains (closure, mistake))
+        g_array_append_val (selected, *mistake);
+    }
+
+  mistakes = _spelling_mistakes_new ((const SpellingMistake *)selected->data,
+                                     selected->len,
+                                     NULL,
+                                     0,
+                                     0);
+
+  return dex_future_new_take_boxed (SPELLING_TYPE_MISTAKES, mistakes);
+}
+
+/**
+ * spelling_checker_check_ranges:
+ * @self: a `SpellingChecker`
+ * @text: UTF-8 text to check
+ * @ranges: (nullable) (array length=n_ranges): eligible ranges in Unicode characters
+ * @n_ranges: number of ranges, or zero to check all of @text when @ranges is %NULL
+ *
+ * Checks complete words wholly inside the eligible ranges. Ranges must be
+ * sorted, non-overlapping, nonempty, and within @text. The text and ranges
+ * are retained or copied before this function returns. A later language
+ * change does not affect the submitted check.
+ *
+ * Returns: (transfer full): a future resolving to `SpellingMistakes`
+ */
+DexFuture *
+spelling_checker_check_ranges (SpellingChecker     *self,
+                               GBytes              *text,
+                               const SpellingRange *ranges,
+                               gsize                n_ranges)
+{
+  SpellingCheckClosure *closure;
+  SpellingDictionary *dictionary;
+  const char *utf8;
+  gsize n_bytes;
+  glong n_chars;
+  guint64 previous_end = 0;
+
+  dex_return_error_if_fail (SPELLING_IS_CHECKER (self));
+  dex_return_error_if_fail (text != NULL);
+
+  spelling_init ();
+
+  n_bytes = g_bytes_get_size (text);
+
+  if (n_bytes > G_MAXINT)
+    return dex_future_new_reject (G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT,
+                                  "Text is too large for spellchecking");
+
+  utf8 = g_bytes_get_data (text, NULL);
+
+  if (n_bytes > 0 && !g_utf8_validate (utf8, n_bytes, NULL))
+    return dex_future_new_reject (G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
+                                  "Text must contain valid UTF-8 without NUL bytes");
+
+  n_chars = n_bytes > 0 ? g_utf8_strlen (utf8, n_bytes) : 0;
+
+  if ((ranges == NULL && n_ranges != 0) || (ranges != NULL && n_ranges == 0))
+    return dex_future_new_reject (G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT,
+                                  "Ranges and range count must agree");
+
+  for (gsize i = 0; i < n_ranges; i++)
+    {
+      if (ranges[i].length == 0 ||
+          ranges[i].offset < previous_end ||
+          ranges[i].offset > (guint64)n_chars ||
+          ranges[i].length > (guint64)n_chars - ranges[i].offset)
+        return dex_future_new_reject (G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT,
+                                      "Ranges must be sorted and within the text");
+
+      previous_end = ranges[i].offset + ranges[i].length;
+    }
+
+  if (n_bytes == 0)
+    return dex_future_new_take_boxed (SPELLING_TYPE_MISTAKES,
+                                      _spelling_mistakes_new (NULL, 0, NULL, 0, 0));
+
+  if ((dictionary = self->dictionary) == NULL)
+    return dex_future_new_take_boxed (SPELLING_TYPE_MISTAKES,
+                                      _spelling_mistakes_new (NULL, 0, NULL, 0, 0));
+
+  closure = spelling_check_closure_new ();
+  closure->job = spelling_job_new (dictionary, _spelling_checker_get_pango_language (self));
+
+  if (n_ranges > 0)
+    {
+      closure->ranges = g_new (SpellingRange, n_ranges);
+
+      for (gsize i = 0; i < n_ranges; i++)
+        {
+          if (closure->n_ranges > 0 &&
+              closure->ranges[closure->n_ranges - 1].offset +
+              closure->ranges[closure->n_ranges - 1].length == ranges[i].offset)
+            closure->ranges[closure->n_ranges - 1].length += ranges[i].length;
+          else
+            closure->ranges[closure->n_ranges++] = ranges[i];
+        }
+    }
+
+  spelling_job_add_fragment (closure->job, text, 0, n_chars);
+
+  return dex_future_then (spelling_job_run (closure->job),
+                          spelling_checker_check_ranges_done,
+                          closure,
+                          (GDestroyNotify)spelling_check_closure_free);
 }
 
 static void

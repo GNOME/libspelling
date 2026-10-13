@@ -25,8 +25,9 @@
 # error "Only <libspelling.h> can be included directly."
 #endif
 
-#include <glib-object.h>
+#include <libdex.h>
 
+#include "spelling-mistakes.h"
 #include "spelling-types.h"
 #include "spelling-version-macros.h"
 
@@ -40,29 +41,34 @@ G_DECLARE_FINAL_TYPE (SpellingChecker, spelling_checker, SPELLING, CHECKER, GObj
 SPELLING_AVAILABLE_IN_ALL
 SpellingChecker   *spelling_checker_get_default          (void);
 SPELLING_AVAILABLE_IN_ALL
-SpellingChecker   *spelling_checker_new                  (SpellingProvider *provider,
-                                                          const char       *language);
+SpellingChecker   *spelling_checker_new                  (SpellingProvider    *provider,
+                                                          const char          *language);
 SPELLING_AVAILABLE_IN_ALL
-SpellingProvider  *spelling_checker_get_provider         (SpellingChecker  *self);
+DexFuture         *spelling_checker_check_ranges         (SpellingChecker     *self,
+                                                          GBytes              *text,
+                                                          const SpellingRange *ranges,
+                                                          gsize                n_ranges) G_GNUC_WARN_UNUSED_RESULT;
 SPELLING_AVAILABLE_IN_ALL
-const char        *spelling_checker_get_language         (SpellingChecker  *self);
+SpellingProvider  *spelling_checker_get_provider         (SpellingChecker     *self);
 SPELLING_AVAILABLE_IN_ALL
-void               spelling_checker_set_language         (SpellingChecker  *self,
-                                                          const char       *language);
+const char        *spelling_checker_get_language         (SpellingChecker     *self);
 SPELLING_AVAILABLE_IN_ALL
-gboolean           spelling_checker_check_word           (SpellingChecker  *self,
-                                                          const char       *word,
-                                                          gssize            word_len);
+void               spelling_checker_set_language         (SpellingChecker     *self,
+                                                          const char          *language);
 SPELLING_AVAILABLE_IN_ALL
-char             **spelling_checker_list_corrections     (SpellingChecker  *self,
-                                                          const char       *word);
+gboolean           spelling_checker_check_word           (SpellingChecker     *self,
+                                                          const char          *word,
+                                                          gssize               word_len);
 SPELLING_AVAILABLE_IN_ALL
-void               spelling_checker_add_word             (SpellingChecker  *self,
-                                                          const char       *word);
+char             **spelling_checker_list_corrections     (SpellingChecker     *self,
+                                                          const char          *word);
 SPELLING_AVAILABLE_IN_ALL
-void               spelling_checker_ignore_word          (SpellingChecker  *self,
-                                                          const char       *word);
+void               spelling_checker_add_word             (SpellingChecker     *self,
+                                                          const char          *word);
 SPELLING_AVAILABLE_IN_ALL
-const char        *spelling_checker_get_extra_word_chars (SpellingChecker  *self);
+void               spelling_checker_ignore_word          (SpellingChecker     *self,
+                                                          const char          *word);
+SPELLING_AVAILABLE_IN_ALL
+const char        *spelling_checker_get_extra_word_chars (SpellingChecker     *self);
 
 G_END_DECLS

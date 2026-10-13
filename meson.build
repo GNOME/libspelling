@@ -1,12 +1,13 @@
 project('libspelling', 'c',
-          version: '0.4.11',
-    meson_version: '>= 0.62.0',
+          version: '1.0.alpha',
+    meson_version: '>= 1.7',
   default_options: [ 'warning_level=2', 'werror=false', 'c_std=gnu11', ],
 )
 
 libgtk_dep = dependency('gtk4', version: '>= 4.15.5')
 gtksource_dep = dependency('gtksourceview-5', version: '>= 5.10.0')
 libgio_dep = dependency('gio-2.0')
+libdex_dep = dependency('libdex-1', version: '>= 1.2')
 
 cc = meson.get_compiler('c')
 

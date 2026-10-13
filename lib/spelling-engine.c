@@ -26,6 +26,7 @@
 
 #include "spelling-engine-private.h"
 #include "spelling-job-private.h"
+#include "spelling-mistakes-private.h"
 
 #define TAG_NEEDS_CHECK        GUINT_TO_POINTER(1)
 #define TAG_CHECKED            GUINT_TO_POINTER(0)
@@ -50,6 +51,10 @@ typedef struct
   GtkBitset      *all;
   guint           size;
 } CollectRanges;
+
+DEX_DEFINE_CLOSURE_TYPE (EngineJobClosure, engine_job_closure,
+                         DEX_DEFINE_CLOSURE_OBJECT (SpellingEngine, engine),
+                         DEX_DEFINE_CLOSURE_OBJECT (SpellingJob, job))
 
 G_DEFINE_FINAL_TYPE (SpellingEngine, spelling_engine, G_TYPE_OBJECT)
 
@@ -236,47 +241,67 @@ collect_ranges (gsize                   offset,
   return collect->size >= WATERMARK_PER_JOB;
 }
 
-static void
-spelling_engine_job_finished (GObject      *object,
-                              GAsyncResult *result,
-                              gpointer      user_data)
+static DexFuture *
+spelling_engine_job_finished (DexFuture *result,
+                              gpointer   user_data)
 {
-  SpellingJob *job = (SpellingJob *)object;
+  EngineJobClosure *closure = user_data;
+  SpellingEngine *self = closure->engine;
+  SpellingJob *job = closure->job;
+  const SpellingRange *checked;
+  SpellingMistakes *mistakes;
+  const GValue *value;
   g_autoptr(GObject) instance = NULL;
-  g_autoptr(SpellingEngine) self = user_data;
-  g_autofree SpellingBoundary *fragments = NULL;
-  g_autofree SpellingMistake *mistakes = NULL;
-  guint n_fragments = 0;
-  guint n_mistakes = 0;
+  guint n_checked = 0;
 
   g_assert (SPELLING_IS_JOB (job));
-  g_assert (G_IS_ASYNC_RESULT (result));
+  g_assert (DEX_IS_FUTURE (result));
   g_assert (SPELLING_IS_ENGINE (self));
+
+  if (self->active != job)
+    return dex_future_new_true ();
 
   g_clear_object (&self->active);
 
   if (!(instance = g_weak_ref_get (&self->instance_wr)))
-    return;
+    return dex_future_new_true ();
 
   if (!self->adapter.check_enabled (instance))
-    return;
+    return dex_future_new_true ();
 
-  spelling_job_run_finish (job, result, &fragments, &n_fragments, &mistakes, &n_mistakes);
+  if (!(value = dex_future_get_value (result, NULL)))
+    return dex_future_new_true ();
 
-  for (guint f = 0; f < n_fragments; f++)
+  mistakes = g_value_get_boxed (value);
+
+  if (_spelling_mistakes_get_revision (mistakes) != spelling_job_get_revision (job))
     {
-      self->adapter.clear_tag (instance, fragments[f].offset, fragments[f].length);
+      spelling_engine_queue_update (self, 0);
+      return dex_future_new_true ();
+    }
+
+  checked = _spelling_mistakes_get_checked (mistakes, &n_checked);
+
+  for (guint f = 0; f < n_checked; f++)
+    {
+      self->adapter.clear_tag (instance, checked[f].offset, checked[f].length);
       _cjh_text_region_replace (self->region,
-                                fragments[f].offset, fragments[f].length,
+                                checked[f].offset, checked[f].length,
                                 TAG_CHECKED);
     }
 
-  for (guint m = 0; m < n_mistakes; m++)
-    self->adapter.apply_tag (instance, mistakes[m].offset, mistakes[m].length);
+  for (guint m = 0; m < spelling_mistakes_get_n_mistakes (mistakes); m++)
+    {
+      const SpellingMistake *mistake = spelling_mistakes_get_mistake (mistakes, m);
+
+      self->adapter.apply_tag (instance, mistake->offset, mistake->length);
+    }
 
   /* Check immediately if there is more */
   if (spelling_engine_has_unchecked_regions (self))
     spelling_engine_queue_update (self, 0);
+
+  return dex_future_new_true ();
 }
 
 static void
@@ -321,6 +346,7 @@ spelling_engine_tick (gpointer data)
   g_autoptr(GObject) instance = NULL;
   const CjhTextRegionRun *run;
   SpellingDictionary *dictionary;
+  EngineJobClosure *closure;
   PangoLanguage *language;
   CollectRanges collect;
   gsize real_offset;
@@ -370,9 +396,14 @@ spelling_engine_tick (gpointer data)
    */
   spelling_engine_clear_runs (self, all);
 
-  spelling_job_run (self->active,
-                    spelling_engine_job_finished,
-                    g_object_ref (self));
+  closure = engine_job_closure_new ();
+  closure->engine = g_object_ref (self);
+  closure->job = g_object_ref (self->active);
+
+  dex_future_disown (dex_future_finally (spelling_job_run (self->active),
+                                         spelling_engine_job_finished,
+                                         closure,
+                                         (GDestroyNotify)engine_job_closure_free));
 
   g_clear_handle_id (&self->queued_update_handler, g_source_remove);
 

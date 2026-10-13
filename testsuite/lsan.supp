@@ -1,0 +1,12 @@
+# Fontconfig allocations retained by Pango and GtkSourceView font setup.
+leak:pango_fc_font_map_load_fontset
+leak:FcConfigAppFontAddFile
+
+# GtkSourceView font caches initialized by GtkSourceView tests.
+leak:load_override_font_fc
+leak:fc_thread_func
+leak:ensure_families
+leak:ensure_languages
+
+# GTK style colors allocated while constructing text views.
+leak:gtk_settings_style_provider_get_color

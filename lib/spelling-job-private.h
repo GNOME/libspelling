@@ -20,51 +20,34 @@
 
 #pragma once
 
-#include <gio/gio.h>
+#include <libdex.h>
 
 #include "spelling-dictionary-internal.h"
+#include "spelling-mistakes.h"
 
 G_BEGIN_DECLS
-
-typedef struct _SpellingMistake
-{
-  guint offset;
-  guint length;
-} SpellingMistake;
 
 #define SPELLING_TYPE_JOB (spelling_job_get_type())
 
 G_DECLARE_FINAL_TYPE (SpellingJob, spelling_job, SPELLING, JOB, GObject)
 
-SpellingJob     *spelling_job_new           (SpellingDictionary   *dictionary,
-                                             PangoLanguage        *language);
-void             spelling_job_discard       (SpellingJob          *self);
-void             spelling_job_run           (SpellingJob          *self,
-                                             GAsyncReadyCallback   callback,
-                                             gpointer              user_data);
-void             spelling_job_run_finish    (SpellingJob          *self,
-                                             GAsyncResult         *result,
-                                             SpellingBoundary    **fragments,
-                                             guint                *n_fragments,
-                                             SpellingMistake     **mistakes,
-                                             guint                *n_mistakes);
-void             spelling_job_run_sync      (SpellingJob          *self,
-                                             SpellingBoundary    **fragments,
-                                             guint                *n_fragments,
-                                             SpellingMistake     **mistakes,
-                                             guint                *n_mistakes);
-void             spelling_job_add_fragment  (SpellingJob          *self,
-                                             GBytes               *bytes,
-                                             guint                 position,
-                                             guint                 length);
-void             spelling_job_notify_delete (SpellingJob          *self,
-                                             guint                 position,
-                                             guint                 length);
-void             spelling_job_notify_insert (SpellingJob          *self,
-                                             guint                 position,
-                                             guint                 length);
-void             spelling_job_invalidate    (SpellingJob          *self,
-                                             guint                 position,
-                                             guint                 length);
+SpellingJob *spelling_job_new           (SpellingDictionary  *dictionary,
+                                         PangoLanguage       *language);
+void         spelling_job_discard       (SpellingJob         *self);
+DexFuture   *spelling_job_run           (SpellingJob         *self) G_GNUC_WARN_UNUSED_RESULT;
+guint64      spelling_job_get_revision  (SpellingJob         *self);
+void         spelling_job_add_fragment  (SpellingJob         *self,
+                                         GBytes              *bytes,
+                                         guint                position,
+                                         guint                length);
+void         spelling_job_notify_delete (SpellingJob         *self,
+                                         guint                position,
+                                         guint                length);
+void         spelling_job_notify_insert (SpellingJob         *self,
+                                         guint                position,
+                                         guint                length);
+void         spelling_job_invalidate    (SpellingJob         *self,
+                                         guint                position,
+                                         guint                length);
 
 G_END_DECLS

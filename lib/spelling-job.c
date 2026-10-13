@@ -24,6 +24,7 @@
 
 #include "spelling-dictionary-internal.h"
 #include "spelling-job-private.h"
+#include "spelling-mistakes-private.h"
 #include "spelling-trace.h"
 
 #define GDK_ARRAY_NAME spelling_boundaries
@@ -42,11 +43,14 @@ typedef struct _SpellingFragment
   gboolean must_discard;
 } SpellingFragment;
 
-typedef struct _SpellingMistakes
+typedef struct _SpellingFragmentMistakes
 {
   const SpellingFragment *fragment;
   GArray                 *boundaries;
-} SpellingMistakes;
+} SpellingFragmentMistakes;
+
+DEX_DEFINE_CLOSURE_TYPE (SpellingJobResultClosure, spelling_job_result_closure,
+                         DEX_DEFINE_CLOSURE_OBJECT (SpellingJob, job))
 
 struct _SpellingJob
 {
@@ -55,6 +59,7 @@ struct _SpellingJob
   PangoLanguage      *language;
   char               *extra_word_chars;
   GArray             *fragments;
+  guint64             revision;
   guint               frozen : 1;
 };
 
@@ -246,7 +251,7 @@ find_word_start (const char         **textptr,
   return FALSE;
 }
 
-static gboolean
+static void
 find_word_end (const char         **textptr,
                gsize               *iptr,
                const PangoLogAttr  *attrs,
@@ -256,7 +261,7 @@ find_word_end (const char         **textptr,
   while (*iptr < attrslen)
     {
       if (attrs[*iptr].is_white)
-        return TRUE;
+        return;
 
       if (attrs[*iptr].is_word_end)
         {
@@ -281,44 +286,36 @@ find_word_end (const char         **textptr,
           if (skipped &&
               *iptr < attrslen &&
               attrs[*iptr].is_word_start)
-            (void)find_word_end (textptr, iptr, attrs, attrslen, extra_word_chars);
+            find_word_end (textptr, iptr, attrs, attrslen, extra_word_chars);
 
-          return TRUE;
+          return;
         }
 
       *textptr = g_utf8_next_char (*textptr);
       (*iptr)++;
     }
-
-  return FALSE;
 }
 
 static void
 clear_mistakes (gpointer data)
 {
-  SpellingMistakes *mistakes = data;
+  SpellingFragmentMistakes *mistakes = data;
 
   mistakes->fragment = NULL;
   g_clear_pointer (&mistakes->boundaries, g_array_unref);
 }
 
-static void
-spelling_job_check (GTask        *task,
-                    gpointer      source_object,
-                    gpointer      task_data,
-                    GCancellable *cancellable)
+static GArray *
+spelling_job_check (SpellingJob *self)
 {
-  SpellingJob *self = source_object;
   SpellingBoundaries boundaries;
   g_autoptr(GArray) result = NULL;
 
-  g_assert (G_IS_TASK (task));
   g_assert (SPELLING_IS_JOB (self));
-  g_assert (!cancellable || G_IS_CANCELLABLE (cancellable));
 
   spelling_boundaries_init (&boundaries);
 
-  result = g_array_new (FALSE, FALSE, sizeof (SpellingMistakes));
+  result = g_array_new (FALSE, FALSE, sizeof (SpellingFragmentMistakes));
   g_array_set_clear_func (result, clear_mistakes);
 
   SPELLING_PROFILER_LOG ("Checking %u fragments", self->fragments->len);
@@ -329,7 +326,7 @@ spelling_job_check (GTask        *task,
       G_GNUC_UNUSED g_autofree char *message = NULL;
       g_autoptr(GtkBitset) bitset = NULL;
       g_autofree PangoLogAttr *attrs = NULL;
-      SpellingMistakes mistakes;
+      SpellingFragmentMistakes mistakes;
       const char *text;
       const char *p;
       GtkBitsetIter iter;
@@ -382,14 +379,25 @@ spelling_job_check (GTask        *task,
               i++;
             }
 
-          if (!find_word_end (&p, &i, attrs, attrslen-1, self->extra_word_chars))
-            break;
+          find_word_end (&p, &i, attrs, attrslen-1, self->extra_word_chars);
 
           boundary.length = i - boundary.offset;
           boundary.byte_length = p - text - boundary.byte_offset;
 
           if (boundary.byte_length > 0)
-            spelling_boundaries_append (&boundaries, &boundary);
+            {
+              /* Extra word chars can start a candidate on their own. Only
+               * check it if Pango found a word within the candidate.
+               */
+              for (gsize j = boundary.offset; j < i; j++)
+                {
+                  if (attrs[j].is_word_start)
+                    {
+                      spelling_boundaries_append (&boundaries, &boundary);
+                      break;
+                    }
+                }
+            }
         }
 
       if (g_atomic_int_get (&fragment->must_discard))
@@ -425,149 +433,115 @@ spelling_job_check (GTask        *task,
 
   spelling_boundaries_clear (&boundaries);
 
-  g_task_return_pointer (task,
-                         g_steal_pointer (&result),
-                         (GDestroyNotify)g_array_unref);
+  return g_steal_pointer (&result);
 }
 
-void
-spelling_job_run (SpellingJob         *self,
-                  GAsyncReadyCallback  callback,
-                  gpointer             user_data)
+static DexThreadPool *
+spelling_job_get_pool (void)
 {
-  g_autoptr(GTask) task = NULL;
+  static DexThreadPool *pool;
+  static gsize initialized;
 
-  g_return_if_fail (SPELLING_IS_JOB (self));
+  if (g_once_init_enter (&initialized))
+    {
+      pool = dex_thread_pool_new (1);
+      g_once_init_leave (&initialized, TRUE);
+    }
+
+  return pool;
+}
+
+static DexFuture *
+spelling_job_check_thread (gpointer data)
+{
+  GArray *result = spelling_job_check (data);
+
+  return dex_future_new_take_boxed (G_TYPE_ARRAY, result);
+}
+
+static DexFuture *
+spelling_job_collect_result (DexFuture *future,
+                             gpointer   user_data)
+{
+  SpellingJobResultClosure *closure = user_data;
+  SpellingJob *self = closure->job;
+  const GValue *value = dex_future_get_value (future, NULL);
+  GArray *raw = g_value_get_boxed (value);
+  g_autoptr(GArray) checked = g_array_new (FALSE, FALSE, sizeof (SpellingRange));
+  g_autoptr(GArray) found = g_array_new (FALSE, FALSE, sizeof (SpellingMistake));
+  SpellingMistakes *result;
+
+  for (guint i = 0; i < self->fragments->len; i++)
+    {
+      const SpellingFragment *fragment = &g_array_index (self->fragments, SpellingFragment, i);
+      SpellingRange range;
+
+      if (g_atomic_int_get (&fragment->must_discard))
+        continue;
+
+      range.offset = fragment->position;
+      range.length = fragment->length;
+      g_array_append_val (checked, range);
+    }
+
+  for (guint i = 0; i < raw->len; i++)
+    {
+      const SpellingFragmentMistakes *item = &g_array_index (raw, SpellingFragmentMistakes, i);
+
+      if (g_atomic_int_get (&item->fragment->must_discard))
+        continue;
+
+      for (guint j = 0; j < item->boundaries->len; j++)
+        {
+          const SpellingBoundary *boundary = &g_array_index (item->boundaries, SpellingBoundary, j);
+          SpellingMistake mistake;
+
+          mistake.offset = item->fragment->position + boundary->offset;
+          mistake.length = boundary->length;
+          mistake.byte_offset = boundary->byte_offset;
+          mistake.byte_length = boundary->byte_length;
+          g_array_append_val (found, mistake);
+        }
+    }
+
+  result = _spelling_mistakes_new ((const SpellingMistake *)found->data,
+                                   found->len,
+                                   (const SpellingRange *)checked->data,
+                                   checked->len,
+                                   self->revision);
+
+  return dex_future_new_take_boxed (SPELLING_TYPE_MISTAKES, result);
+}
+
+DexFuture *
+spelling_job_run (SpellingJob *self)
+{
+  SpellingJobResultClosure *closure;
+  DexThreadPool *pool;
+
+  dex_return_error_if_fail (SPELLING_IS_JOB (self));
+  dex_return_error_if_fail (!self->frozen);
 
   self->frozen = TRUE;
 
-  task = g_task_new (self, NULL, callback, user_data);
-  g_task_set_source_tag (task, spelling_job_run);
-  g_task_run_in_thread (task, spelling_job_check);
-}
+  dex_init ();
 
-void
-spelling_job_run_finish (SpellingJob       *self,
-                         GAsyncResult      *result,
-                         SpellingBoundary **fragments,
-                         guint             *n_fragments,
-                         SpellingMistake  **mistakes,
-                         guint             *n_mistakes)
-{
-  g_autoptr(GArray) ar = NULL;
+  if (!(pool = spelling_job_get_pool ()))
+    return dex_future_new_reject (G_IO_ERROR,
+                                  G_IO_ERROR_FAILED,
+                                  "Unable to create spelling worker");
 
-  g_return_if_fail (SPELLING_IS_JOB (self));
-  g_return_if_fail (G_IS_TASK (result));
-  g_return_if_fail (n_fragments != NULL || fragments == NULL);
-  g_return_if_fail (mistakes != NULL);
-  g_return_if_fail (n_mistakes != NULL);
+  closure = spelling_job_result_closure_new ();
+  closure->job = g_object_ref (self);
 
-  *n_mistakes = 0;
-  *mistakes = NULL;
-
-  if (n_fragments != NULL)
-    *n_fragments = 0;
-
-  if (fragments != NULL)
-    *fragments = NULL;
-
-  if (n_fragments != NULL)
-    {
-      for (guint i = 0; i < self->fragments->len; i++)
-        {
-          const SpellingFragment *fragment = &g_array_index (self->fragments, SpellingFragment, i);
-
-          if (fragment->must_discard)
-            continue;
-
-          (*n_fragments)++;
-        }
-    }
-
-  if (fragments != NULL)
-    {
-      guint pos = 0;
-
-      *fragments = g_new0 (SpellingBoundary, *n_fragments);
-
-      for (guint i = 0; i < self->fragments->len; i++)
-        {
-          const SpellingFragment *fragment = &g_array_index (self->fragments, SpellingFragment, i);
-
-          if (fragment->must_discard)
-            continue;
-
-          (*fragments)[pos].offset = fragment->position;
-          (*fragments)[pos].length = fragment->length;
-
-          pos++;
-        }
-    }
-
-  ar = g_task_propagate_pointer (G_TASK (result), NULL);
-
-  if (ar != NULL)
-    {
-      guint pos = 0;
-
-      for (guint i = 0; i < ar->len; i++)
-        {
-          const SpellingMistakes *m = &g_array_index (ar, SpellingMistakes, i);
-
-          if (m->fragment->must_discard)
-            continue;
-
-          *n_mistakes += m->boundaries->len;
-        }
-
-      if (*n_mistakes == 0)
-        return;
-
-      *mistakes = g_new0 (SpellingMistake, *n_mistakes);
-
-      for (guint i = 0; i < ar->len; i++)
-        {
-          const SpellingMistakes *m = &g_array_index (ar, SpellingMistakes, i);
-
-          if (m->fragment->must_discard)
-            continue;
-
-          for (guint j = 0; j < m->boundaries->len; j++)
-            {
-              const SpellingBoundary *boundary = &g_array_index (m->boundaries, SpellingBoundary, j);
-
-              (*mistakes)[pos].offset = m->fragment->position + boundary->offset;
-              (*mistakes)[pos].length = boundary->length;
-
-              pos++;
-            }
-        }
-
-      g_assert (pos == *n_mistakes);
-    }
-}
-
-void
-spelling_job_run_sync (SpellingJob       *self,
-                       SpellingBoundary **fragments,
-                       guint             *n_fragments,
-                       SpellingMistake  **mistakes,
-                       guint             *n_mistakes)
-{
-  g_autoptr(GTask) task = NULL;
-
-  g_return_if_fail (SPELLING_IS_JOB (self));
-  g_return_if_fail (n_fragments != NULL || fragments == NULL);
-  g_return_if_fail (mistakes != NULL);
-  g_return_if_fail (n_mistakes != NULL);
-
-  self->frozen = TRUE;
-
-  task = g_task_new (self, NULL, NULL, NULL);
-  g_task_set_source_tag (task, spelling_job_run);
-  spelling_job_check (task, self, NULL, NULL);
-
-  spelling_job_run_finish (self, G_ASYNC_RESULT (task), fragments, n_fragments, mistakes, n_mistakes);
+  return dex_future_then (dex_thread_pool_submit (pool,
+                                                  "[spelling-job]",
+                                                  spelling_job_check_thread,
+                                                  g_object_ref (self),
+                                                  g_object_unref),
+                          spelling_job_collect_result,
+                          closure,
+                          (GDestroyNotify)spelling_job_result_closure_free);
 }
 
 void
@@ -597,6 +571,8 @@ spelling_job_notify_insert (SpellingJob *self,
 {
   g_return_if_fail (SPELLING_IS_JOB (self));
 
+  self->revision++;
+
   for (guint i = 0; i < self->fragments->len; i++)
     {
       SpellingFragment *fragment = &g_array_index (self->fragments, SpellingFragment, i);
@@ -625,6 +601,8 @@ spelling_job_notify_delete (SpellingJob *self,
                             guint        length)
 {
   g_return_if_fail (SPELLING_IS_JOB (self));
+
+  self->revision++;
 
   for (guint i = 0; i < self->fragments->len; i++)
     {
@@ -661,6 +639,8 @@ spelling_job_invalidate (SpellingJob *self,
 {
   g_return_if_fail (SPELLING_IS_JOB (self));
 
+  self->revision++;
+
   for (guint i = 0; i < self->fragments->len; i++)
     {
       SpellingFragment *fragment = &g_array_index (self->fragments, SpellingFragment, i);
@@ -676,4 +656,12 @@ spelling_job_invalidate (SpellingJob *self,
 
       g_atomic_int_set (&fragment->must_discard, TRUE);
     }
+}
+
+guint64
+spelling_job_get_revision (SpellingJob *self)
+{
+  g_return_val_if_fail (SPELLING_IS_JOB (self), 0);
+
+  return self->revision;
 }
