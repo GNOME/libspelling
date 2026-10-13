@@ -246,7 +246,7 @@ find_word_start (const char         **textptr,
   return FALSE;
 }
 
-static gboolean
+static void
 find_word_end (const char         **textptr,
                gsize               *iptr,
                const PangoLogAttr  *attrs,
@@ -256,7 +256,7 @@ find_word_end (const char         **textptr,
   while (*iptr < attrslen)
     {
       if (attrs[*iptr].is_white)
-        return TRUE;
+        return;
 
       if (attrs[*iptr].is_word_end)
         {
@@ -281,16 +281,14 @@ find_word_end (const char         **textptr,
           if (skipped &&
               *iptr < attrslen &&
               attrs[*iptr].is_word_start)
-            (void)find_word_end (textptr, iptr, attrs, attrslen, extra_word_chars);
+            find_word_end (textptr, iptr, attrs, attrslen, extra_word_chars);
 
-          return TRUE;
+          return;
         }
 
       *textptr = g_utf8_next_char (*textptr);
       (*iptr)++;
     }
-
-  return FALSE;
 }
 
 static void
@@ -382,8 +380,7 @@ spelling_job_check (GTask        *task,
               i++;
             }
 
-          if (!find_word_end (&p, &i, attrs, attrslen-1, self->extra_word_chars))
-            break;
+          find_word_end (&p, &i, attrs, attrslen-1, self->extra_word_chars);
 
           boundary.length = i - boundary.offset;
           boundary.byte_length = p - text - boundary.byte_offset;

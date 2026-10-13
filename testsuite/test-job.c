@@ -231,6 +231,24 @@ test_job_basic (void)
     { "caminar por la   calle", 0, NULL },
     { ".\nthis ", 0, NULL },
     { "’\nthis ", 0, NULL },
+    { "misplled",
+      1,
+      (const SpellingBoundary[]) {
+        { .offset = 0, .length = 8 },
+      },
+    },
+    { "'misplled",
+      1,
+      (const SpellingBoundary[]) {
+        { .offset = 0, .length = 9 },
+      },
+    },
+    { "misplled'",
+      1,
+      (const SpellingBoundary[]) {
+        { .offset = 0, .length = 9 },
+      },
+    },
     { "it'",
       1,
       (const SpellingBoundary[]) {
