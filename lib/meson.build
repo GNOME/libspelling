@@ -67,10 +67,15 @@ configure_file(
     install_dir: join_paths(get_option('includedir'), 'libspelling-' + api_version)
 )
 
+libspelling_c_args = [
+  '-DG_LOG_DOMAIN="libspelling"',
+  '-DLIBSPELLING_COMPILATION',
+]
+
 libspelling_static = static_library( 'spelling-' + api_version, libspelling_sources,
            dependencies: libspelling_deps,
   gnu_symbol_visibility: 'hidden',
-                 c_args: ['-DLIBSPELLING_COMPILATION'],
+                 c_args: libspelling_c_args,
     include_directories: [include_directories('..'), include_directories('.')],
                 install: get_option('install-static'),
 )
@@ -88,7 +93,7 @@ libspelling = shared_library('spelling-' + api_version,
                 version: '@0@.0.0'.format(so_version),
         darwin_versions: '@0@.0'.format(so_version),
                 install: true,
-                 c_args: ['-DLIBSPELLING_COMPILATION'] + release_args,
+                 c_args: libspelling_c_args + release_args,
 )
 
 libspelling_dep = declare_dependency(
