@@ -33,6 +33,10 @@ static SpellingDictionary *dictionary;
 static guint cursor;
 static guint last_clear_position;
 static guint last_clear_length;
+static guint clear_count;
+static guint apply_count;
+static guint max_copy_length;
+static GtkBitset *excluded;
 
 typedef struct _TestDictionary
 {
@@ -50,10 +54,10 @@ G_DEFINE_FINAL_TYPE (TestDictionary, test_dictionary, SPELLING_TYPE_DICTIONARY)
 
 typedef struct
 {
-  GString *str;
+  GString    *str;
   const char *pos;
-  guint offset;
-  gunichar ch;
+  guint       offset;
+  gunichar    ch;
 } StringIter;
 
 static gboolean
@@ -143,6 +147,8 @@ copy_text (gpointer instance,
   const char *begin = g_utf8_offset_to_pointer (buffer->str, position);
   const char *end = g_utf8_offset_to_pointer (begin, length);
 
+  max_copy_length = MAX (max_copy_length, length);
+
   return g_strndup (begin, end - begin);
 }
 
@@ -151,6 +157,7 @@ clear_tag (gpointer instance,
            guint    position,
            guint    length)
 {
+  clear_count++;
   last_clear_position = position;
   last_clear_length = length;
 
@@ -162,6 +169,7 @@ apply_tag (gpointer instance,
            guint    position,
            guint    length)
 {
+  apply_count++;
   gtk_bitset_add_range (mispelled, position, length);
 }
 
@@ -260,6 +268,8 @@ static void
 intersect_spellcheck_region (gpointer   instance,
                              GtkBitset *bitset)
 {
+  if (excluded != NULL)
+    gtk_bitset_subtract (bitset, excluded);
 }
 
 static guint
@@ -376,6 +386,7 @@ test_engine_basic (void)
   delete (engine, 1, 1, "0");
   delete (engine, 0, 1, "");
 
+  g_object_run_dispose (G_OBJECT (engine));
   g_string_free (buffer, TRUE);
   gtk_bitset_unref (mispelled);
   g_object_unref (dictionary);
@@ -407,9 +418,160 @@ test_engine_delete_invalidates_joined_word (void)
   g_assert_cmpuint (last_clear_position, ==, 0);
   g_assert_cmpuint (last_clear_length, ==, 6);
 
+  g_object_run_dispose (G_OBJECT (engine));
   g_string_free (buffer, TRUE);
   gtk_bitset_unref (mispelled);
   g_object_unref (dictionary);
+}
+
+static void
+wait_for_mistakes (guint count)
+{
+  gint64 deadline = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
+
+  while (gtk_bitset_get_size (mispelled) != count)
+    {
+      guint before = apply_count;
+
+      g_assert_cmpint (g_get_monotonic_time (), <, deadline);
+      if (!g_main_context_iteration (NULL, FALSE))
+        g_usleep (1000);
+      g_assert_cmpuint (apply_count - before, <=, 32);
+    }
+}
+
+static void
+test_engine_batched_results (void)
+{
+  g_autoptr(SpellingEngine) engine = NULL;
+  g_autoptr(GObject) instance = g_object_new (G_TYPE_OBJECT, NULL);
+  g_autoptr(GString) text = g_string_new (NULL);
+  gint64 deadline = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
+
+  dictionary = g_object_new (test_dictionary_get_type (),
+                             "code", "en_US",
+                             NULL);
+  buffer = g_string_new (NULL);
+  mispelled = gtk_bitset_new_empty ();
+  max_copy_length = 0;
+  apply_count = 0;
+  engine = spelling_engine_new (&adapter, instance);
+
+  for (guint i = 0; i < 2000; i++)
+    g_string_append (text, "bäd ");
+  insert (engine, text->str, 0, NULL);
+
+  /* Interrupt a partially applied result, including the priority range at
+   * the cursor, then verify that the remaining dirty text is retried.
+   */
+  while (apply_count == 0)
+    {
+      g_assert_cmpint (g_get_monotonic_time (), <, deadline);
+      if (!g_main_context_iteration (NULL, FALSE))
+        g_usleep (1000);
+    }
+  g_assert_cmpuint (apply_count, <=, 32);
+  g_assert_cmpuint (gtk_bitset_get_size (mispelled), <, 6000);
+  delete (engine, 0, 4, NULL);
+  wait_for_mistakes (5997);
+
+  g_assert_cmpuint (max_copy_length, <=, 1008);
+  for (guint i = 0; i < 1999; i++)
+    {
+      g_assert_true (gtk_bitset_contains (mispelled, i * 4));
+      g_assert_true (gtk_bitset_contains (mispelled, i * 4 + 2));
+      g_assert_false (gtk_bitset_contains (mispelled, i * 4 + 3));
+    }
+
+  g_object_run_dispose (G_OBJECT (engine));
+  g_string_free (buffer, TRUE);
+  gtk_bitset_unref (mispelled);
+  g_clear_object (&dictionary);
+}
+
+static void
+test_engine_coalesced_invalidation (void)
+{
+  g_autoptr(SpellingEngine) engine = NULL;
+  g_autoptr(GObject) instance = g_object_new (G_TYPE_OBJECT, NULL);
+
+  dictionary = g_object_new (test_dictionary_get_type (),
+                             "code", "en_US",
+                             NULL);
+  buffer = g_string_new (NULL);
+  mispelled = gtk_bitset_new_empty ();
+  excluded = gtk_bitset_new_empty ();
+  engine = spelling_engine_new (&adapter, instance);
+  insert (engine, "bad bad bad bad", 0, NULL);
+  wait_for_mistakes (12);
+
+  clear_count = 0;
+  for (guint i = 0; i < 100; i++)
+    {
+      spelling_engine_queue_invalidate (engine, 4, 3);
+      spelling_engine_queue_invalidate (engine, 6, 5);
+    }
+  g_assert_cmpuint (clear_count, ==, 0);
+
+  /* Pending context-class ranges must follow text edits before dispatch. */
+  spelling_engine_before_insert_text (engine, 0, 4);
+  g_string_prepend (buffer, "foo ");
+  gtk_bitset_splice (mispelled, 0, 0, 4);
+  cursor = 4;
+  spelling_engine_after_insert_text (engine, 0, 4);
+  gtk_bitset_add_range (excluded, 8, 7);
+  clear_count = 0;
+  spelling_engine_iteration (engine);
+  g_assert_cmpuint (clear_count, ==, 1);
+  g_assert_cmpuint (last_clear_position, ==, 8);
+  g_assert_cmpuint (last_clear_length, ==, 7);
+  wait_for_mistakes (6);
+
+  gtk_bitset_remove_all (excluded);
+  spelling_engine_queue_invalidate (engine, 8, 7);
+  wait_for_mistakes (12);
+  g_assert_false (gtk_bitset_contains (mispelled, 0));
+  g_assert_true (gtk_bitset_contains (mispelled, 8));
+  g_assert_true (gtk_bitset_contains (mispelled, 16));
+
+  g_object_run_dispose (G_OBJECT (engine));
+  g_string_free (buffer, TRUE);
+  gtk_bitset_unref (mispelled);
+  g_clear_pointer (&excluded, gtk_bitset_unref);
+  g_clear_object (&dictionary);
+}
+
+static void
+test_engine_long_cursor_word (void)
+{
+  g_autoptr(SpellingEngine) engine = NULL;
+  g_autoptr(GObject) instance = g_object_new (G_TYPE_OBJECT, NULL);
+  g_autoptr(GString) text = g_string_new (NULL);
+
+  dictionary = g_object_new (test_dictionary_get_type (),
+                             "code", "en_US",
+                             NULL);
+  buffer = g_string_new (NULL);
+  mispelled = gtk_bitset_new_empty ();
+  engine = spelling_engine_new (&adapter, instance);
+
+  for (guint i = 0; i < 500; i++)
+    g_string_append (text, "bad ");
+  for (guint i = 0; i < 2000; i++)
+    g_string_append_c (text, 'x');
+  insert (engine, text->str, 0, NULL);
+
+  /* The word at EOF exceeds the job watermark. Once checked, it must stop
+   * taking the entire budget so the dirty prefix can make progress.
+   */
+  wait_for_mistakes (3500);
+  g_assert_true (gtk_bitset_contains (mispelled, 0));
+  g_assert_true (gtk_bitset_contains (mispelled, 3999));
+
+  g_object_run_dispose (G_OBJECT (engine));
+  g_string_free (buffer, TRUE);
+  gtk_bitset_unref (mispelled);
+  g_clear_object (&dictionary);
 }
 
 int
@@ -420,7 +582,9 @@ main (int argc,
 
   g_test_init (&argc, &argv, NULL);
   g_test_add_func ("/Spelling/Engine/basic", test_engine_basic);
-  g_test_add_func ("/Spelling/Engine/delete_invalidates_joined_word",
-                   test_engine_delete_invalidates_joined_word);
+  g_test_add_func ("/Spelling/Engine/delete_invalidates_joined_word", test_engine_delete_invalidates_joined_word);
+  g_test_add_func ("/Spelling/Engine/batched-results", test_engine_batched_results);
+  g_test_add_func ("/Spelling/Engine/coalesced-invalidation", test_engine_coalesced_invalidation);
+  g_test_add_func ("/Spelling/Engine/long-cursor-word", test_engine_long_cursor_word);
   return g_test_run ();
 }

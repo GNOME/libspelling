@@ -53,23 +53,26 @@ typedef struct _SpellingAdapter
 
 G_DECLARE_FINAL_TYPE (SpellingEngine, spelling_engine, SPELLING, ENGINE, GObject)
 
-SpellingEngine *spelling_engine_new                 (const SpellingAdapter *adapter,
-                                                     GObject               *instance);
-void            spelling_engine_before_insert_text  (SpellingEngine        *self,
-                                                     guint                  position,
-                                                     guint                  length);
+void            spelling_engine_after_delete_range  (SpellingEngine        *self,
+                                                     guint                  position);
 void            spelling_engine_after_insert_text   (SpellingEngine        *self,
                                                      guint                  position,
                                                      guint                  length);
 void            spelling_engine_before_delete_range (SpellingEngine        *self,
                                                      guint                  position,
                                                      guint                  length);
-void            spelling_engine_after_delete_range  (SpellingEngine        *self,
-                                                     guint                  position);
-void            spelling_engine_iteration           (SpellingEngine        *self);
+void            spelling_engine_before_insert_text  (SpellingEngine        *self,
+                                                     guint                  position,
+                                                     guint                  length);
 void            spelling_engine_invalidate          (SpellingEngine        *self,
                                                      guint                  position,
                                                      guint                  length);
 void            spelling_engine_invalidate_all      (SpellingEngine        *self);
+void            spelling_engine_iteration           (SpellingEngine        *self);
+SpellingEngine *spelling_engine_new                 (const SpellingAdapter *adapter,
+                                                     GObject               *instance);
+void            spelling_engine_queue_invalidate    (SpellingEngine        *self,
+                                                     guint                  position,
+                                                     guint                  length);
 
 G_END_DECLS

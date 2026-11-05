@@ -527,9 +527,9 @@ invalidate_tag_region_cb (SpellingTextBufferAdapter *self,
   if (tag == self->no_spell_check_tag)
     {
       gtk_text_iter_order (begin, end);
-      spelling_engine_invalidate (self->engine,
-                                  gtk_text_iter_get_offset (begin),
-                                  gtk_text_iter_get_offset (end) - gtk_text_iter_get_offset (begin));
+      spelling_engine_queue_invalidate (self->engine,
+                                         gtk_text_iter_get_offset (begin),
+                                         gtk_text_iter_get_offset (end) - gtk_text_iter_get_offset (begin));
     }
 }
 
