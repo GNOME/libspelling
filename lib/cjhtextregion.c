@@ -780,8 +780,8 @@ inserted:
 
   /*
    * Now update each of the parent nodes in the tree so that they have
-   * an apprporiate length along with the child pointer. This allows them
-   * to calculate offsets while walking the tree (without derefrencing the
+   * an appropriate length along with the child pointer. This allows them
+   * to calculate offsets while walking the tree (without dereference of the
    * child node) at the cost of us walking back up the tree.
    */
   for (parent = cjh_text_region_node_get_parent (target), node = target;
