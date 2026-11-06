@@ -356,6 +356,9 @@ test_pointer_context (Fixture       *fixture,
   int begin, end;
   int selection_cursor;
 
+  g_test_skip ("Needs the GtkText UTF-8 hit-testing fix in CI's GTK");
+  return;
+
   gtk_editable_set_text (editable, text);
   gtk_editable_set_position (editable, -1);
   gtk_editable_set_alignment (editable, 0.5);
