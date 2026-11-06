@@ -3,7 +3,7 @@ Title: Overview
 # Overview
 
 Spelling is a [GNOME](https://www.gnome.org/) library that provides spellchecking
-for `GtkTextView` widgets.
+for `GtkTextView` and `GtkEditable` widgets.
 
 For a source view, create a `SpellingTextBufferAdapter` for its buffer and a
 `SpellingTextViewAdapter` for each view displaying that buffer. Add the view
@@ -11,6 +11,10 @@ adapter's menu model to the view's extra menu. The view adapter installs the
 `spelling` action group and prepares corrections for context clicks and
 keyboard menu requests without moving the insertion cursor. Keep the view
 adapter alive for as long as its menu is in use.
+
+For `GtkEntry` and other `GtkEditable` widgets, create a
+`SpellingEditableAdapter` and add its menu model to the widget's extra menu.
+Keep the adapter alive while the widget is in use.
 
 ##  pkg-config name
 

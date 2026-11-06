@@ -28,6 +28,7 @@ G_BEGIN_DECLS
 #define LIBSPELLING_INSIDE
 # include "spelling-checker.h"
 # include "spelling-dictionary.h"
+# include "spelling-editable-adapter.h"
 # include "spelling-init.h"
 # include "spelling-language.h"
 # include "spelling-mistakes.h"

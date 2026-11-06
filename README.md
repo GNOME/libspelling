@@ -42,6 +42,18 @@ buffer does not already have one. Releasing the old view adapter removes its
 action group and event controllers. `SpellingTextViewAdapter` does not rebind
 itself when the view's buffer changes.
 
+For `GtkEntry` and other `GtkEditable` widgets, use `SpellingEditableAdapter`.
+
+```c
+SpellingEditableAdapter *adapter = spelling_editable_adapter_new (GTK_EDITABLE (entry), checker);
+GMenuModel *model = spelling_editable_adapter_get_menu_model (adapter);
+
+gtk_entry_set_extra_menu (entry, model);
+```
+
+Keep the adapter alive while the widget is in use. Spellchecking is enabled
+by default.
+
 For text stored outside `GtkTextBuffer`, use
 `spelling_checker_check_ranges()`. Pass one UTF-8 `GBytes` snapshot and
 optional sorted, non-overlapping ranges measured in Unicode characters.
