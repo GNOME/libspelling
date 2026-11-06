@@ -1,3 +1,20 @@
+libspelling 0.4.11
+==================
+
+This is a bug-fix release for GNOME 48 and newer
+
+ * Fix false positives when checking words around punctuation and whitespace
+ * Recheck surrounding words after deleting text
+ * Recheck the buffer after changing languages from the spelling menu
+ * Fix the language submenu action namespace
+ * Fix an uninitialized offset when scanning already checked text
+ * Use a single underline by default to improve rendering performance
+ * Remove incorrect G_GNUC_CONST annotations from type registration functions
+ * Fix documentation dependency links and introspection documentation format
+ * Fix checker to take new reference to provider
+ * Add Lao, Swiss German, and Norwegian Nynorsk translations
+ * Update Bulgarian and Cornish translations
+
 libspelling 0.4.10
 ==================
 
