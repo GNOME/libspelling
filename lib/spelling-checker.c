@@ -248,7 +248,7 @@ spelling_checker_constructed (GObject *object)
   G_OBJECT_CLASS (spelling_checker_parent_class)->constructed (object);
 
   if (self->provider == NULL)
-    self->provider = spelling_provider_get_default ();
+    self->provider = g_object_ref (spelling_provider_get_default ());
 }
 
 static void
