@@ -120,6 +120,11 @@ pkg.generate(
 if get_option('introspection').enabled()
   gnome = import('gnome')
 
+  libdex_gir_include = 'Dex-1'
+  if libdex_dep.type_name() == 'internal'
+    libdex_gir_include = subproject('libdex').get_variable('libdex_gir')[0]
+  endif
+
   gi_scanner = find_program('g-ir-scanner', required: get_option('introspection'))
   libspelling_gir_extra_args = [
     '-DLIBSPELLING_COMPILATION',
@@ -135,7 +140,7 @@ if get_option('introspection').enabled()
               namespace: 'Spelling',
           symbol_prefix: 'spelling',
       identifier_prefix: 'Spelling',
-               includes: ['Gio-2.0', 'Dex-1', 'Gtk-4.0', 'GtkSource-5'],
+               includes: ['Gio-2.0', libdex_gir_include, 'Gtk-4.0', 'GtkSource-5'],
         export_packages: 'libspelling-' + api_version,
                 install: true,
                  header: 'libspelling.h',
