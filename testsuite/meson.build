@@ -14,6 +14,7 @@ libspelling_testsuite_c_args = [
 libspelling_testsuite = {
   'test-cursor' : {},
   'test-engine' : {},
+  'test-editable-adapter' : {},
   'test-job' : {},
   'test-region' : {},
   'test-view-adapter' : {},
