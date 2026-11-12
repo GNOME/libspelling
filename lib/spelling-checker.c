@@ -133,7 +133,7 @@ spelling_checker_check_ranges_done (DexFuture *future,
         g_array_append_val (selected, *mistake);
     }
 
-  mistakes = _spelling_mistakes_new ((const SpellingMistake *)selected->data,
+  mistakes = _spelling_mistakes_new ((const SpellingMistake *)(gpointer)selected->data,
                                      selected->len,
                                      NULL,
                                      0,

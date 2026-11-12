@@ -504,9 +504,9 @@ spelling_job_collect_result (DexFuture *future,
         }
     }
 
-  result = _spelling_mistakes_new ((const SpellingMistake *)found->data,
+  result = _spelling_mistakes_new ((const SpellingMistake *)(gpointer)found->data,
                                    found->len,
-                                   (const SpellingRange *)checked->data,
+                                   (const SpellingRange *)(gpointer)checked->data,
                                    checked->len,
                                    self->revision);
 
