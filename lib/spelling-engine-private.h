@@ -34,7 +34,8 @@ typedef struct _SpellingAdapter
   guint               (*get_cursor)                  (gpointer   instance);
   char               *(*copy_text)                   (gpointer   instance,
                                                       guint      position,
-                                                      guint      length);
+                                                      guint      length,
+                                                      gssize    *n_bytes);
   void                (*apply_tag)                   (gpointer   instance,
                                                       guint      position,
                                                       guint      length);

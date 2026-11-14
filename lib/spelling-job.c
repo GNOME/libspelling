@@ -544,19 +544,26 @@ spelling_job_run (SpellingJob *self)
                           (GDestroyNotify)spelling_job_result_closure_free);
 }
 
+/**
+ * spelling_job_add_fragment:
+ * @self: a spelling job
+ * @bytes: (transfer full): the fragment's UTF-8 text
+ * @position: the character offset of the fragment
+ * @length: the length of the fragment in characters
+ */
 void
 spelling_job_add_fragment (SpellingJob *self,
                            GBytes      *bytes,
                            guint        position,
                            guint        length)
 {
-  SpellingFragment fragment = {0};
+  SpellingFragment fragment = { 0 };
 
   g_return_if_fail (SPELLING_IS_JOB (self));
   g_return_if_fail (bytes != NULL);
   g_return_if_fail (self->frozen == FALSE);
 
-  fragment.bytes = g_bytes_ref (bytes);
+  fragment.bytes = g_steal_pointer (&bytes);
   fragment.position = position;
   fragment.length = length;
   fragment.must_discard = FALSE;

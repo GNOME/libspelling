@@ -248,7 +248,7 @@ test_job_basic (void)
       g_autoptr(SpellingMistakes) mistakes = NULL;
       g_autoptr(GError) error = NULL;
 
-      spelling_job_add_fragment (job, bytes, 0, g_utf8_strlen (tests[i].text, -1));
+      spelling_job_add_fragment (job, g_steal_pointer (&bytes), 0, g_utf8_strlen (tests[i].text, -1));
 
       mistakes = dex_await_boxed (spelling_job_run (job), &error);
       g_assert_no_error (error);
@@ -270,7 +270,7 @@ test_job_discard (void)
 
   /* First make sure things work */
   job = spelling_job_new (dictionary, pango_language_get_default ());
-  spelling_job_add_fragment (job, bytes, 1, 13);
+  spelling_job_add_fragment (job, g_bytes_ref (bytes), 1, 13);
   mistakes = dex_await_boxed (spelling_job_run (job), &error);
   g_assert_no_error (error);
   g_assert_nonnull (mistakes);
@@ -282,7 +282,7 @@ test_job_discard (void)
 
   /* Now try to do an INSERT that SHOULD NOT collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
-  spelling_job_add_fragment (job, bytes, 1, 13);
+  spelling_job_add_fragment (job, g_bytes_ref (bytes), 1, 13);
   spelling_job_notify_insert (job, 0, 3);
   mistakes = dex_await_boxed (spelling_job_run (job), &error);
   g_assert_no_error (error);
@@ -295,7 +295,7 @@ test_job_discard (void)
 
   /* Now try to do an INSERT that SHOULD collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
-  spelling_job_add_fragment (job, bytes, 1, 13);
+  spelling_job_add_fragment (job, g_bytes_ref (bytes), 1, 13);
   spelling_job_notify_insert (job, 1, 3);
   mistakes = dex_await_boxed (spelling_job_run (job), &error);
   g_assert_no_error (error);
@@ -307,7 +307,7 @@ test_job_discard (void)
 
   /* Now try to do a DELETE that SHOULD NOT collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
-  spelling_job_add_fragment (job, bytes, 2, 13);
+  spelling_job_add_fragment (job, g_bytes_ref (bytes), 2, 13);
   spelling_job_notify_delete (job, 0, 1);
   mistakes = dex_await_boxed (spelling_job_run (job), &error);
   g_assert_no_error (error);
@@ -320,7 +320,7 @@ test_job_discard (void)
 
   /* Now try to do a DELETE that SHOULD collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
-  spelling_job_add_fragment (job, bytes, 1, 13);
+  spelling_job_add_fragment (job, g_bytes_ref (bytes), 1, 13);
   spelling_job_notify_delete (job, 0, 1);
   mistakes = dex_await_boxed (spelling_job_run (job), &error);
   g_assert_no_error (error);
@@ -332,7 +332,7 @@ test_job_discard (void)
 
   /* Now try to do a DELETE that SHOULD collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
-  spelling_job_add_fragment (job, bytes, 0, 13);
+  spelling_job_add_fragment (job, g_bytes_ref (bytes), 0, 13);
   spelling_job_notify_delete (job, 13, 1);
   mistakes = dex_await_boxed (spelling_job_run (job), &error);
   g_assert_no_error (error);
@@ -344,7 +344,7 @@ test_job_discard (void)
 
   /* Now try to do a DELETE that SHOULD NOT collide */
   job = spelling_job_new (dictionary, pango_language_get_default ());
-  spelling_job_add_fragment (job, bytes, 0, 13);
+  spelling_job_add_fragment (job, g_bytes_ref (bytes), 0, 13);
   spelling_job_notify_delete (job, 14, 1);
   mistakes = dex_await_boxed (spelling_job_run (job), &error);
   g_assert_no_error (error);

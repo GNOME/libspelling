@@ -230,7 +230,7 @@ spelling_checker_check_ranges (SpellingChecker     *self,
         }
     }
 
-  spelling_job_add_fragment (closure->job, text, 0, n_chars);
+  spelling_job_add_fragment (closure->job, g_bytes_ref (text), 0, n_chars);
 
   return dex_future_then (spelling_job_run (closure->job),
                           spelling_checker_check_ranges_done,

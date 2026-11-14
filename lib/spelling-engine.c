@@ -136,17 +136,19 @@ spelling_engine_add_fragment (SpellingEngine *self,
                               guint           begin,
                               guint           end)
 {
-  g_autoptr(GBytes) bytes = NULL;
+  gssize n_bytes = -1;
   char *text;
 
   g_assert (SPELLING_IS_ENGINE (self));
   g_assert (bitset != NULL);
   g_assert (end >= begin);
 
-  text = self->adapter.copy_text (instance, begin, end - begin + 1);
-  bytes = g_bytes_new_take (text, strlen (text));
+  text = self->adapter.copy_text (instance, begin, end - begin + 1, &n_bytes);
 
-  spelling_job_add_fragment (job, bytes, begin, end - begin + 1);
+  if (n_bytes < 0)
+    n_bytes = strlen (text);
+
+  spelling_job_add_fragment (job, g_bytes_new_take (text, n_bytes), begin, end - begin + 1);
 }
 
 static void

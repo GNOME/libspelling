@@ -156,14 +156,17 @@ spelling_text_buffer_adapter_get_cursor (gpointer instance)
 }
 
 static char *
-spelling_text_buffer_adapter_copy_text (gpointer instance,
-                                        guint    position,
-                                        guint    length)
+spelling_text_buffer_adapter_copy_text (gpointer  instance,
+                                        guint     position,
+                                        guint     length,
+                                        gssize   *n_bytes)
 {
   SpellingTextBufferAdapter *self = instance;
   g_autoptr(GtkTextBuffer) buffer = NULL;
   GtkTextIter begin;
   GtkTextIter end;
+
+  *n_bytes = -1;
 
   if (!(buffer = g_weak_ref_get (&self->buffer_wr)))
     {

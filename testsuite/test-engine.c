@@ -140,14 +140,16 @@ string_iter_forward (StringIter *iter)
 }
 
 static char *
-copy_text (gpointer instance,
-           guint    position,
-           guint    length)
+copy_text (gpointer  instance,
+           guint     position,
+           guint     length,
+           gssize   *n_bytes)
 {
   const char *begin = g_utf8_offset_to_pointer (buffer->str, position);
   const char *end = g_utf8_offset_to_pointer (begin, length);
 
   max_copy_length = MAX (max_copy_length, length);
+  *n_bytes = end - begin;
 
   return g_strndup (begin, end - begin);
 }
